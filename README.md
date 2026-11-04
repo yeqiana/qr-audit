@@ -21,9 +21,13 @@ It supports offline workflows where the WeChat app cannot be used, paired export
 | Optional secondary ZXing-C++ decoder | **Supported when locally installed**; verify the exact runtime configuration |
 | Registry for 28 historical preprocessing/decoder configurations | **Available as definitions only**; V04–V28 require an adapter |
 | Read-only source hint search | **Available**; hints are not confirmed implementation evidence |
-| Paired/grouped image inventory and unmatched-file reporting | **Available** |
+| Recursive mixed paired/standalone inventory with group-scoped pair IDs | **Available** |
 | Ordinary scanning with early stop | **Available**; missing later attempts must be recorded |
-| Complete contribution experiment | **Analysis available** for complete externally generated attempt evidence; not executable for 28 strategies out of the box |
+| Generic strategy/decoder executor adapter | **Available**; adapter modules can register audited V01–V28 implementations without changing their preprocessing algorithms |
+| Evidence schema v2 with run/input/hash/retry/source validation | **Available**; structural and provenance status are separate |
+| Before/after input consistency gate | **Available**; content changes, additions and deletions invalidate contribution conclusions |
+| Separate file-level and pair-level contribution/removal-loss metrics | **Available** |
+| Complete contribution experiment | **Available only when every declared strategy/decoder is connected and all provenance checks pass** |
 | Individual strategy uniqueness and whole-family removal loss | **Available** only when the experiment evidence is complete |
 | Markdown + same-name, offline responsive HTML reports | **Available** |
 | Native WeChat App compatibility, business success, automatic strategy deletion | **Not verified / not provided** |
@@ -46,7 +50,7 @@ Invoke it explicitly:
 ```text
 $qr-audit Scan a local QR image folder offline, produce per-directory and paired reports, and do not open QR payload links.
 $qr-audit Audit the current scanner's 28 strategy definitions, actual code paths, early-stop behavior, decoding options, and independent contribution evidence.
-$qr-audit Run a complete strategy-contribution analysis from this run-manifest.json and attempts.jsonl; report whole-family removal loss and reject incomplete matrices.
+$qr-audit Run a complete strategy-contribution analysis from this run-manifest.json, attempts.jsonl and inventory.json; verify source/registry/input provenance and report file-level and pair-level family-removal loss.
 ```
 
 Run the bundled **reference baseline** (Python 3; install `opencv-python` and `numpy` separately and explicitly in your offline environment):
@@ -55,9 +59,12 @@ Run the bundled **reference baseline** (Python 3; install `opencv-python` and `n
 $skill = "$HOME\.agents\skills\qr-audit"
 $input = 'D:\workSpace\本地电脑\03-图片扫描检测\检测文件'
 python "$skill\scripts\run.py" scan --input-root "$input" --report-root "$input\report" --decoder opencv
+
+# With a locally importable adapter module, contribution mode disables early stopping:
+python "$skill\scripts\run.py" scan --experiment-mode contribution --input-root "$input" --report-root "$input\report" --adapter-module my_qr_adapter --decoder opencv
 ```
 
-The run will be marked `PASS_BASELINE_ONLY` — not a complete 28-strategy audit or contribution experiment. The Skill **never installs packages, downloads models, logs into WeChat, or follows QR payload URLs without user authorization**. Read the [Chinese quick start](README.zh-CN.md) or the [FAQ](docs/faq.md) for prerequisites and limitation details.
+The run will be marked `PASS_BASELINE_ONLY` — not a complete 28-strategy audit or contribution experiment. Contribution analysis requires schema 2.0 evidence plus both `--inventory` and `--inventory-after`, the frozen registry, stable input snapshots, and verified local source fingerprints. The unified `scan --experiment-mode contribution` command writes file-level and pair-level CSVs under that run's evidence directory when every gate passes. The Skill **never installs packages, downloads models, logs into WeChat, or follows QR payload URLs without user authorization**. Read the [Chinese quick start](README.zh-CN.md) or the [FAQ](docs/faq.md) for prerequisites and limitation details.
 
 ## Scan → audit → contribution analysis → evidence
 
@@ -84,7 +91,7 @@ Each input group produces at least **three Markdown files plus three same-stem H
 
 > **Important:** A zero *individual exclusive contribution* for each pure-mode variant does **not** imply zero loss from removing the **entire pure-mode branch**. Incomplete experiment matrices, missing combinations, early stopping, and error states must not be represented as zero loss.
 
-See the [metrics explanation](docs/metrics.md) and [evidence contract](references/evidence-contract.md).
+See the [file-vs-pair metrics](docs/metrics.md), [schema 2.0 evidence contract](references/evidence-contract.md), and [generic executor adapter](references/adapter-contract.md).
 
 ## Documentation
 

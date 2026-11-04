@@ -54,10 +54,10 @@ description: "QR Audit: offline QR code scanning, source-code auditing and prepr
 
 默认可识别成对目录名 `WAVES_QR` 和 `WAVES_QR_RAW`，但它们只是默认配置，不是 Skill 的硬编码业务限制。用户可指定其他名称。
 
-1. 若 `input_root` 直接包含一侧或两侧目录，则将 `input_root` 作为一个组。
-2. 否则扫描其直接子目录，识别其中包含一侧或两侧目录的组。
-3. 若没有成对结构但根目录直接含图片，则作为单目录组。
-4. 若根目录没有直接图片但有多个独立图片子目录，则每个子目录作为单目录组。
+1. 从 `input_root` 开始递归发现所有成对组和含直接图片的独立目录，不因先发现一个配对组就停止发现其他单目录组。
+2. 配对目录中的左右侧目录作为组内两侧，不再被重复识别为独立组；若组根目录本身也含图片，则另建仅包含根目录直接图片的单目录组。
+3. 单目录组只收集该目录直接包含的图片；其子目录继续递归发现，避免父组递归吞并子组并重复计数。
+4. 根目录、子目录同时存在配对组与单目录组时，全部纳入 inventory。
 5. 缺少配对目录时仍生成该侧报告和总报告，并明确标记 `MISSING_DIRECTORY`。
 6. 默认按相对路径配对，统一 `/`、Unicode NFC，并按 Windows 不区分大小写规则比较。按 basename 配对必须由用户明确指定，并检查重名歧义。
 7. 文件名相同但载荷不同必须标记 `PAYLOAD_CONFLICT`。
@@ -71,7 +71,7 @@ description: "QR Audit: offline QR code scanning, source-code auditing and prepr
 4. 对每张图片记录：`image_id`、组、侧、相对路径、原图 SHA-256、解码器 ID/版本/选项、策略 ID/顺序/参数、状态、载荷或载荷 SHA-256、候选区域数、变体尺寸与 SHA-256、耗时、异常、跳过原因和执行时间。
 5. 只检测到二维码候选区域但没有读出载荷，记为 `DETECTED_ONLY`，不能打勾。
 6. 载荷非空且解码器确认 QR 内容，记为 `DECODED`。这只证明本地解码器读出了内容，不证明业务有效。
-7. 多个解码器返回不同载荷时标记冲突并进入人工复核。
+7. 多个解码器或策略返回不同载荷集合时标记载荷冲突并进入人工复核；单次识别到多个合法二维码按无序身份集合保留，不把多码本身视为冲突。
 8. 对二维码载荷中的 URL 只按文本记录，绝不打开、请求、解析远端页面或跟随重定向。
 
 ## 能力 B：扫描器与策略源码审计
@@ -98,7 +98,7 @@ description: "QR Audit: offline QR code scanning, source-code auditing and prepr
 
 策略库中的参数未知时保持 `null`，不得用猜测值补齐。每条策略的 `implementation_status` 初始为 `NOT_VERIFIED`，审计后才能更新证据状态；本 Skill 不自动改写用户现有策略代码。
 
-**V1 内置扫描器能力边界：** `scripts/scan_images.py` 可以使用已经安装的 OpenCV 执行 V01 原图、V02 灰度和 V03 参考自动对比度（三者为本 Skill 的参考实现，非对用户现有代码的逐字复刻）。V04–V28 在未完成源码审计和执行器接入前一律记录 `NOT_RUN`；即使注册表列出 28 条，也不能称为 28 条实际执行。完整贡献度实验可从项目现有扫描器导出的、经校验的 `attempts.jsonl` 执行统计。
+**V1.1 内置扫描器能力边界：** `scripts/scan_images.py` 可以使用已经安装的 OpenCV 执行 V01 原图、V02 灰度和 V03 参考自动对比度（三者为本 Skill 的参考实现，非对用户现有代码的逐字复刻）。通过 `--adapter-module` 可注册现有策略和解码器执行器；V04–V28 未接入前仍记录 `NOT_RUN`。执行器接入不等于源码确认，加载的适配器源码会纳入指纹。
 
 ## 两种扫描调度与贡献度要求
 
@@ -114,7 +114,11 @@ description: "QR Audit: offline QR code scanning, source-code auditing and prepr
 - 对每张图片逐一执行所有符合条件的策略和规定的解码器组合。
 - **关闭成功后提前停止**；发现任何 `SKIPPED_EARLY_STOP` 都判定本次贡献度实验不完整。
 - 对不适用策略仍写入跳过记录，说明 `skip_reason`。
-- manifest 必须声明图片集合、策略顺序、解码器集合和预期组合；每个预期组合必须有执行或跳过记录。
+- manifest 必须声明图片集合、策略顺序、解码器集合和预期组合；每个预期组合必须有执行或跳过记录。每条 attempt 绑定 run_id、图片身份、输入 SHA-256、策略、解码器、attempt_id 和连续重试序号。
+- 必须使用 schema 2.0 证据契约；同一逻辑组合允许多次 attempt，但 attempt_id 不可重复、attempt_index 必须从 1 连续递增，矛盾重试载荷必须阻断贡献度结论。
+- 扫描前后重新清点输入，识别内容变化、新增和删除；校验器必须读取 before/after 两份 inventory 并重新计算差异，不能只信任 manifest 的 STABLE 字段。贡献度分析时还要重新哈希当前输入文件，防止扫描结束后图片再次变化。输入变化时保留证据，但将本次实验标记无效，不发布有效贡献度结论。
+- 分别核验 inventory、策略注册表和源码文件指纹。结构校验 PASS 不代表来源已验证；贡献度结论必须要求 provenance VERIFIED。
+- 配对身份使用组 ID + 规范化配对键生成的 pair_id；文件级和配对级成功、独占贡献、类别移除损失必须分别统计。
 - 相同策略的多解码器结果分别保留，再按图片集合汇总策略效果。
 - 若执行失败、超时、进程中断或预期组合缺失，贡献度结论标记 `INCOMPLETE`，不得把缺失统计成零贡献。
 
@@ -139,7 +143,7 @@ description: "QR Audit: offline QR code scanning, source-code auditing and prepr
 
 如果贡献度实验不完整，`exclusive_contribution` 和 `removal_loss` 必须输出 `NA/INCOMPLETE`，不能输出伪造的 0。
 
-统计脚本：`scripts/analyze_contributions.py`。证据校验：`scripts/validate_evidence.py`。
+统计脚本：`scripts/analyze_contributions.py`。统一证据契约：`scripts/evidence_contract.py`；命令行校验入口：`scripts/validate_evidence.py`。直接调用统计脚本与统一入口必须共用该契约。文件级 CSV 与配对级 CSV、类别移除损失必须分开输出。载荷比较仅在算法与数据范围相同时进行；哈希-only 证据必须声明 hash scope。
 
 ## 结果状态语义
 
@@ -188,7 +192,7 @@ description: "QR Audit: offline QR code scanning, source-code auditing and prepr
 ```text
 <workspace_root>/
   qr-tools/
-    qr-audit-v1.0.1/
+    qr-audit-v1.1.0/
   检测文件/
     <组A>/
       WAVES_QR/
@@ -243,9 +247,11 @@ description: "QR Audit: offline QR code scanning, source-code auditing and prepr
 $skill = "$HOME\.agents\skills\qr-audit"
 $project = "D:\workSpace\本地电脑\03-图片扫描检测"
 python "$skill\scripts\run.py" scan --input-root "$project\检测文件" --report-root "$project\检测文件\report" --workspace-root "$project" --decoder opencv
+# 对接已审计执行器后，贡献度模式不提前停止：
+python "$skill\scripts\run.py" scan --experiment-mode contribution --input-root "$project\检测文件" --report-root "$project\检测文件\report" --workspace-root "$project" --adapter-module my_qr_adapter --decoder opencv
 python "$skill\scripts\run.py" audit --source-root "$project\qr-tools" --output "$project\检测文件\report\<run_id>\evidence\audit-hints.json"
 # 对接并完整执行本地28策略后，再输入本次贡献度专用 manifest 和 attempts：
-python "$skill\scripts\run.py" contribution --manifest "<manifest.json>" --attempts "<attempts.jsonl>" --out-dir "<新输出目录>"
+python "$skill\scripts\run.py" contribution --manifest "<manifest.json>" --attempts "<attempts.jsonl>" --inventory "<inventory.json>" --inventory-after "<inventory-after.json>" --out-dir "<新输出目录>"
 ```
 
 `scan` 依赖当前机器已有的 `opencv-python` 与 `numpy`；若没有，停止并提示依赖缺失，不静默安装。`audit`/贡献度统计/HTML 渲染核心部分使用 Python 标准库。

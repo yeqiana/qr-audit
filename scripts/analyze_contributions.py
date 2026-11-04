@@ -1,3 +1,4 @@
+"""Evidence-gated file and pair contribution analysis."""
 import argparse
 import csv
 import json
@@ -6,201 +7,335 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-SKIP_STATUSES = {"SKIPPED_EARLY_STOP", "SKIPPED_INELIGIBLE", "NOT_RUN"}
-EXECUTED_STATUSES = {"DECODED", "DETECTED_ONLY", "NO_DECODE", "ERROR"}
+from evidence_contract import (
+    EXECUTED_STATUSES, SKIP_STATUSES, payload_identities, validate,
+)
 
 def load_jsonl(path):
     rows = []
-    with Path(path).open("r", encoding="utf-8") as f:
-        for line_no, line in enumerate(f, 1):
-            if not line.strip():
-                continue
-            try:
-                rows.append(json.loads(line))
-            except json.JSONDecodeError as exc:
-                raise ValueError(f"{path}:{line_no}: JSON 无效: {exc}")
+    for line_no, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{path}:{line_no}: invalid JSON: {exc}") from exc
     return rows
+
 
 def p95_nearest_rank(values):
     values = sorted(float(x) for x in values)
     return values[max(0, math.ceil(0.95 * len(values)) - 1)] if values else None
 
+
 def strategy_metadata(manifest, registry):
-    registry_map = {s["strategy_id"]: s for s in registry.get("strategies", [])}
-    source = manifest.get("strategies")
-    if source:
-        result = {}
-        for item in source:
-            if isinstance(item, str):
-                base = dict(registry_map.get(item, {"strategy_id": item}))
-            else:
-                sid = item["strategy_id"]
-                base = dict(registry_map.get(sid, {}))
-                base.update(item)
-            result[base["strategy_id"]] = base
-        return result, manifest.get("strategy_order") or list(result)
-    result = dict(registry_map)
-    return result, manifest.get("strategy_order") or list(result)
+    registry_map = {item["strategy_id"]: item for item in registry.get("strategies", [])}
+    result = {}
+    for item in manifest.get("strategies", []):
+        if isinstance(item, str):
+            base = dict(registry_map.get(item, {"strategy_id": item}))
+        else:
+            base = dict(registry_map.get(item["strategy_id"], {}))
+            base.update(item)
+        result[base["strategy_id"]] = base
+    order = manifest.get("strategy_order") or list(result)
+    return result, order
 
-def analyze(manifest, attempts, registry):
-    strategies, order = strategy_metadata(manifest, registry)
-    image_meta = {x["image_id"]: x for x in manifest.get("images", [])}
-    for a in attempts:
-        image_meta.setdefault(a["image_id"], {"image_id": a["image_id"],
-                          "group_id": a.get("group_id", "UNKNOWN"), "side_id": a.get("side_id", "UNKNOWN")})
-    image_ids = set(image_meta)
-    decoders = manifest.get("decoders", [])
-    decoder_ids = [x if isinstance(x, str) else x["decoder_id"] for x in decoders]
-    if not decoder_ids:
-        decoder_ids = sorted({a.get("decoder_id", "UNKNOWN") for a in attempts})
-    seen = {(a.get("image_id"), a.get("strategy_id"), a.get("decoder_id")) for a in attempts}
-    expected = {(img, sid, dec) for img in image_ids for sid in order for dec in decoder_ids}
-    missing = sorted(expected - seen)
-    early = [a for a in attempts if a.get("status") == "SKIPPED_EARLY_STOP"]
-    execution_incomplete = [a for a in attempts if a.get('status') in ('ERROR', 'NOT_RUN') or (a.get('status')=='SKIPPED_INELIGIBLE' and str(a.get('skip_reason','')).startswith(('NOT_IMPLEMENTED','DECODER_UNAVAILABLE')))]
-    complete = manifest.get('mode') == 'contribution' and not missing and not early and not execution_incomplete and bool(expected)
 
-    success_by_strategy = {sid: set() for sid in order}
-    attempts_by_strategy = defaultdict(list)
-    durations = defaultdict(list)
-    payloads_by_image = defaultdict(set)
-    for a in attempts:
-        sid = a.get("strategy_id")
-        success_by_strategy.setdefault(sid, set())
-        attempts_by_strategy[sid].append(a)
-        if a.get("status") in EXECUTED_STATUSES:
+def aggregate_cells(attempts):
+    cells = defaultdict(list)
+    for row in attempts:
+        cells[(row.get("image_id"), row.get("strategy_id"), row.get("decoder_id"))].append(row)
+    outcomes = {}
+    retry_conflicts = []
+    for key, rows in cells.items():
+        rows = sorted(rows, key=lambda item: int(item.get("attempt_index", 1)))
+        decoded = [row for row in rows if row.get("status") == "DECODED"]
+        identities = []
+        for row in decoded:
             try:
-                durations[sid].append(float(a.get("duration_ms", 0)))
-            except (TypeError, ValueError):
-                pass
-        if a.get("status") == "DECODED":
-            success_by_strategy[sid].add(a["image_id"])
-            payloads_by_image[a["image_id"]].add(a.get("payload_sha256") or str(a.get("payload", "UNSPECIFIED")))
+                identities.append(tuple(payload_identities(row)))
+            except ValueError:
+                identities.append(tuple())
+        distinct = set(identities)
+        if len(distinct) > 1:
+            retry_conflicts.append(key)
+        outcomes[key] = {
+            "status": "DECODED" if decoded else rows[-1].get("status", "NOT_RUN"),
+            "payload_identities": set().union(*(set(x) for x in identities)) if identities else set(),
+            "attempts": rows,
+            "retry_conflict": len(distinct) > 1,
+        }
+    return outcomes, retry_conflicts
 
-    all_success = set().union(*success_by_strategy.values()) if success_by_strategy else set()
-    cumulative = set()
-    strategy_rows = []
-    for index, sid in enumerate(order, 1):
-        successes = success_by_strategy.get(sid, set())
-        new = successes - cumulative
-        repeated = successes & cumulative
-        others = set().union(*(v for k, v in success_by_strategy.items() if k != sid)) if len(success_by_strategy) > 1 else set()
-        exclusive = len(successes - others) if complete else "NA_INCOMPLETE"
-        records = attempts_by_strategy.get(sid, [])
-        executed = [a for a in records if a.get("status") in EXECUTED_STATUSES]
-        skipped = [a for a in records if a.get("status") in SKIP_STATUSES]
-        ds = durations.get(sid, [])
-        meta = strategies.get(sid, {})
-        strategy_rows.append({
-            "strategy_id": sid, "strategy_order": index,
-            "name_zh": meta.get("name_zh", sid), "family": meta.get("family", "UNCLASSIFIED"),
-            "success_images": len(successes), "ordered_new_success": len(new),
-            "repeat_success": len(repeated), "exclusive_contribution": exclusive,
-            "attempt_count": len(executed), "skipped_count": len(skipped),
-            "average_duration_ms": round(sum(ds) / len(ds), 3) if ds else None,
-            "p95_duration_ms": p95_nearest_rank(ds), "contribution_metrics_valid": complete
-        })
-        cumulative |= successes
 
+def _family_groups(strategies):
     groups = defaultdict(set)
-    for sid, meta in strategies.items():
+    for strategy_id, meta in strategies.items():
         tags = set(meta.get("groups", [])) | set(meta.get("tags", []))
         if meta.get("family"):
             tags.add("family:" + meta["family"])
         for tag in tags:
-            groups[tag].add(sid)
+            groups[tag].add(strategy_id)
+    return groups
 
-    def removal_rows(scope, filter_ids):
-        filtered = {sid: success_by_strategy.get(sid, set()) & filter_ids for sid in order}
+
+def _metrics_for_units(unit_type, success_by_strategy, unit_meta, order, strategies, complete):
+    unit_ids = set(unit_meta)
+    cumulative = set()
+    rows = []
+    for index, strategy_id in enumerate(order, 1):
+        successes = success_by_strategy.get(strategy_id, set()) & unit_ids
+        others = set().union(*(
+            values & unit_ids for key, values in success_by_strategy.items() if key != strategy_id
+        )) if len(success_by_strategy) > 1 else set()
+        new = successes - cumulative
+        repeated = successes & cumulative
+        meta = strategies.get(strategy_id, {})
+        rows.append({
+            "unit_type": unit_type, "strategy_id": strategy_id, "strategy_order": index,
+            "name_zh": meta.get("name_zh", strategy_id), "family": meta.get("family", "UNCLASSIFIED"),
+            "success_units": len(successes),
+            "success_images": len(successes) if unit_type == "FILE" else None,
+            "success_pairs": len(successes) if unit_type == "PAIR" else None,
+            "ordered_new_success": len(new),
+            "repeat_success": len(repeated),
+            "exclusive_contribution": len(successes - others) if complete else "NA_INCOMPLETE",
+            "contribution_metrics_valid": complete,
+        })
+        cumulative |= successes
+    return rows
+
+
+def _removal_rows(unit_type, scopes, success_by_strategy, order, strategies, complete):
+    groups = _family_groups(strategies)
+    rows = []
+    for scope_name, scope_ids in scopes:
+        filtered = {
+            strategy_id: success_by_strategy.get(strategy_id, set()) & scope_ids
+            for strategy_id in order
+        }
         baseline = set().union(*filtered.values()) if filtered else set()
-        result = []
         for tag, members in sorted(groups.items()):
-            remaining = set().union(*(v for sid, v in filtered.items() if sid not in members)) if len(filtered) > len(members) else set()
-            result.append({"scope": scope, "strategy_group": tag, "strategy_ids": ";".join(sorted(members)),
-                           "baseline_success_images": len(baseline),
-                           "success_after_removal": len(remaining) if complete else "NA_INCOMPLETE",
-                           "removal_loss": len(baseline - remaining) if complete else "NA_INCOMPLETE",
-                           "contribution_metrics_valid": complete})
-        return result
+            remaining = set().union(*(
+                values for strategy_id, values in filtered.items() if strategy_id not in members
+            )) if len(filtered) > len(members) else set()
+            rows.append({
+                "unit_type": unit_type, "scope": scope_name, "strategy_group": tag,
+                "strategy_ids": ";".join(sorted(members)),
+                "baseline_success_units": len(baseline),
+                "success_after_removal": len(remaining) if complete else "NA_INCOMPLETE",
+                "removal_loss": len(baseline - remaining) if complete else "NA_INCOMPLETE",
+                "contribution_metrics_valid": complete,
+            })
+    return rows
 
-    removal = removal_rows("GLOBAL", image_ids)
-    for group in sorted({str(x.get("group_id", "UNKNOWN")) for x in image_meta.values()}):
-        subset = {i for i, m in image_meta.items() if str(m.get("group_id", "UNKNOWN")) == group}
-        removal.extend(removal_rows("GROUP:" + group, subset))
-    for side in sorted({str(x.get("side_id", "UNKNOWN")) for x in image_meta.values()}):
-        subset = {i for i, m in image_meta.items() if str(m.get("side_id", "UNKNOWN")) == side}
-        removal.extend(removal_rows("SIDE:" + side, subset))
 
-    conflicts = sorted(img for img, vals in payloads_by_image.items() if len(vals) > 1 and "UNSPECIFIED" not in vals)
-    reasons = []
-    if missing: reasons.append("manifest/attempts 预期组合缺失: " + str(len(missing)))
-    if early: reasons.append("存在提前停止记录: " + str(len(early)))
-    if execution_incomplete: reasons.append('存在未运行/报错/未实现组合: ' + str(len(execution_incomplete)))
-    if manifest.get("mode") != "contribution": reasons.append("mode 不是 contribution")
-    if not expected: reasons.append("预期组合为空")
-    # Each scope needs its own strategy-level incremental counts, not just family removal loss.
-    scoped_rows=[]
-    scope_sets=[('GLOBAL', image_ids)]
-    scope_sets += [('GROUP:'+group, {i for i,m in image_meta.items() if str(m.get('group_id','UNKNOWN'))==group}) for group in sorted({str(m.get('group_id','UNKNOWN')) for m in image_meta.values()})]
-    scope_sets += [('SIDE:'+side, {i for i,m in image_meta.items() if str(m.get('side_id','UNKNOWN'))==side}) for side in sorted({str(m.get('side_id','UNKNOWN')) for m in image_meta.values()})]
-    scope_sets += [('PAIR:'+pair, {i for i,m in image_meta.items() if str(m.get('pair_key','UNKNOWN'))==pair}) for pair in sorted({str(m.get('pair_key')) for m in image_meta.values() if m.get('pair_key')})]
-    for scope, ids in scope_sets:
-        prior=set()
-        for sid in order:
-            successes=success_by_strategy.get(sid,set()) & ids
-            others=set().union(*(v & ids for k,v in success_by_strategy.items() if k!=sid)) if len(success_by_strategy)>1 else set()
-            scoped_rows.append({'scope':scope,'strategy_id':sid,'success_images':len(successes),
-                               'ordered_new_success':len(successes-prior),'repeat_success':len(successes & prior),
-                               'exclusive_contribution':len(successes-others) if complete else 'NA_INCOMPLETE'})
-            prior|=successes
-    return {
-        "schema_version": "1.0", "mode": manifest.get("mode", "scan"),
-        "contribution_metrics_valid": complete, "incomplete_reasons": reasons,
-        "image_count": len(image_ids), "all_success_images": len(all_success),
-        "payload_conflict_images": len(conflicts), "payload_conflict_image_ids": conflicts,
-        "missing_expected_combinations": [{"image_id": x[0], "strategy_id": x[1], "decoder_id": x[2]} for x in missing],
-        "strategy_metrics": strategy_rows, "strategy_metrics_by_scope": scoped_rows, "group_removal_loss": removal
+def analyze(manifest, attempts, registry, inventory=None, inventory_after=None, validation=None):
+    validation = validation or validate(
+        manifest, attempts, registry=registry, inventory=inventory,
+        inventory_after=inventory_after,
+    )
+    strategies, order = strategy_metadata(manifest, registry)
+    image_meta = {item["image_id"]: item for item in manifest.get("images", [])}
+    outcomes, retry_conflicts = aggregate_cells(attempts)
+    complete = bool(validation.get("contribution_metrics_valid"))
+
+    file_success = {strategy_id: set() for strategy_id in order}
+    file_durations = defaultdict(list)
+    image_payload_sets = defaultdict(set)
+    for (image_id, strategy_id, decoder_id), outcome in outcomes.items():
+        if outcome["status"] == "DECODED":
+            file_success.setdefault(strategy_id, set()).add(image_id)
+            image_payload_sets[image_id].add(tuple(sorted(outcome["payload_identities"])))
+        for attempt in outcome["attempts"]:
+            if attempt.get("status") in EXECUTED_STATUSES:
+                try:
+                    duration = float(attempt.get("duration_ms", 0))
+                    if math.isfinite(duration) and duration >= 0:
+                        file_durations[strategy_id].append(duration)
+                except (TypeError, ValueError):
+                    pass
+
+    pair_meta = {}
+    image_to_pair = {}
+    for image_id, meta in image_meta.items():
+        pair_id = meta.get("pair_id")
+        if pair_id:
+            image_to_pair[image_id] = pair_id
+            pair_meta[pair_id] = {
+                "group_id": meta.get("group_id"),
+                "pair_status": meta.get("pair_status"),
+                "pair_key": meta.get("pair_key"),
+            }
+    eligible_pair_ids = {
+        pair_id for pair_id, meta in pair_meta.items() if meta.get("pair_status") == "PAIRED"
     }
+    pair_success = {strategy_id: set() for strategy_id in order}
+    for strategy_id, image_ids in file_success.items():
+        for image_id in image_ids:
+            pair_id = image_to_pair.get(image_id)
+            if pair_id in eligible_pair_ids:
+                pair_success.setdefault(strategy_id, set()).add(pair_id)
+
+    strategy_rows = _metrics_for_units(
+        "FILE", file_success, image_meta, order, strategies, complete
+    )
+    pair_rows = _metrics_for_units(
+        "PAIR", pair_success,
+        {pair_id: meta for pair_id, meta in pair_meta.items() if pair_id in eligible_pair_ids},
+        order, strategies, complete,
+    )
+    for row in strategy_rows:
+        records = [
+            attempt for attempt in attempts
+            if attempt.get("strategy_id") == row["strategy_id"]
+        ]
+        executed = [x for x in records if x.get("status") in EXECUTED_STATUSES]
+        skipped = [x for x in records if x.get("status") in SKIP_STATUSES]
+        durations = file_durations.get(row["strategy_id"], [])
+        row.update({
+            "attempt_count": len(executed), "skipped_count": len(skipped),
+            "average_duration_ms": round(sum(durations) / len(durations), 3) if durations else None,
+            "p95_duration_ms": p95_nearest_rank(durations),
+        })
+
+    file_scopes = [("GLOBAL", set(image_meta))]
+    group_ids = sorted({str(meta.get("group_id", "UNKNOWN")) for meta in image_meta.values()})
+    side_ids = sorted({str(meta.get("side_id", "UNKNOWN")) for meta in image_meta.values()})
+    file_scopes.extend(
+        ("GROUP:" + group_id, {image_id for image_id, meta in image_meta.items()
+                               if str(meta.get("group_id", "UNKNOWN")) == group_id})
+        for group_id in group_ids
+    )
+    file_scopes.extend(
+        ("SIDE:" + side_id, {image_id for image_id, meta in image_meta.items()
+                             if str(meta.get("side_id", "UNKNOWN")) == side_id})
+        for side_id in side_ids
+    )
+    pair_unit_meta = {pair_id: pair_meta[pair_id] for pair_id in eligible_pair_ids}
+    pair_scopes = [("GLOBAL", set(pair_unit_meta))]
+    pair_scopes.extend(
+        ("GROUP:" + group_id, {pair_id for pair_id, meta in pair_unit_meta.items()
+                               if str(meta.get("group_id", "UNKNOWN")) == group_id})
+        for group_id in sorted({str(meta.get("group_id", "UNKNOWN")) for meta in pair_unit_meta.values()})
+    )
+
+    file_removal = _removal_rows("FILE", file_scopes, file_success, order, strategies, complete)
+    pair_removal = _removal_rows("PAIR", pair_scopes, pair_success, order, strategies, complete)
+    file_scope_metrics = []
+    for scope, unit_ids in file_scopes:
+        file_scope_metrics.extend(
+            {"scope": scope, **row}
+            for row in _metrics_for_units("FILE", file_success, {x: image_meta[x] for x in unit_ids},
+                                          order, strategies, complete)
+        )
+    pair_scope_metrics = []
+    for scope, unit_ids in pair_scopes:
+        pair_scope_metrics.extend(
+            {"scope": scope, **row}
+            for row in _metrics_for_units("PAIR", pair_success, {x: pair_unit_meta[x] for x in unit_ids},
+                                          order, strategies, complete)
+        )
+
+    conflicts = []
+    not_comparable = []
+    for image_id, identity_sets in image_payload_sets.items():
+        if len(identity_sets) <= 1:
+            continue
+        all_identities = set().union(*(set(identity_set) for identity_set in identity_sets))
+        scopes = {(identity[0], identity[1]) for identity in all_identities}
+        if len(scopes) > 1:
+            not_comparable.append(image_id)
+        else:
+            conflicts.append(image_id)
+    conflicts.sort()
+    not_comparable.sort()
+    all_success_files = set().union(*file_success.values()) if file_success else set()
+    all_success_pairs = set().union(*pair_success.values()) if pair_success else set()
+    reasons = list(validation.get("errors", []))
+    if manifest.get("mode") != "contribution":
+        reasons.append("mode is not contribution")
+    if retry_conflicts:
+        reasons.append(f"conflicting payload identities across retries: {len(retry_conflicts)}")
+
+    return {
+        "schema_version": "2.0", "mode": manifest.get("mode", "scan"),
+        "validation": validation, "contribution_metrics_valid": complete,
+        "incomplete_reasons": reasons,
+        "image_count": len(image_meta), "all_success_images": len(all_success_files),
+        "eligible_pair_count": len(eligible_pair_ids), "all_success_pairs": len(all_success_pairs),
+        "excluded_pair_count": len(pair_meta) - len(eligible_pair_ids),
+        "payload_conflict_images": len(conflicts), "payload_conflict_image_ids": conflicts,
+        "payload_not_comparable_images": len(not_comparable),
+        "payload_not_comparable_image_ids": not_comparable,
+        "retry_payload_conflict_count": len(retry_conflicts),
+        "strategy_metrics": strategy_rows, "pair_strategy_metrics": pair_rows,
+        "strategy_metrics_by_scope": file_scope_metrics + pair_scope_metrics,
+        "file_group_removal_loss": file_removal, "pair_group_removal_loss": pair_removal,
+        "group_removal_loss": file_removal + pair_removal,
+    }
+
 
 def write_csv(path, rows):
     if not rows:
         return
-    with Path(path).open("w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+    with Path(path).open("w", encoding="utf-8-sig", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(rows[0].keys()))
         writer.writeheader()
         writer.writerows(rows)
 
+
 def main():
-    p = argparse.ArgumentParser(description="计算二维码策略顺序新增、重复、独占贡献和整类移除损失。")
-    p.add_argument("--manifest", required=True)
-    p.add_argument("--attempts", required=True)
-    p.add_argument("--registry", default=str(Path(__file__).resolve().parents[1] / "assets" / "strategy-registry.initial.json"))
-    p.add_argument("--out-dir", required=True)
-    p.add_argument("--overwrite", action="store_true")
-    args = p.parse_args()
+    parser = argparse.ArgumentParser(description="分别计算文件级与配对级二维码策略贡献。")
+    parser.add_argument("--manifest", required=True)
+    parser.add_argument("--attempts", required=True)
+    parser.add_argument("--inventory", required=True)
+    parser.add_argument("--inventory-after", required=True)
+    parser.add_argument("--registry", default=str(Path(__file__).resolve().parents[1] / "assets" / "strategy-registry.initial.json"))
+    parser.add_argument("--out-dir", required=True)
+    args = parser.parse_args()
     try:
         manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
         attempts = load_jsonl(args.attempts)
+        inventory = json.loads(Path(args.inventory).read_text(encoding="utf-8"))
+        inventory_after = json.loads(Path(args.inventory_after).read_text(encoding="utf-8"))
         registry = json.loads(Path(args.registry).read_text(encoding="utf-8"))
-        result = analyze(manifest, attempts, registry)
+        result = analyze(manifest, attempts, registry, inventory, inventory_after)
+        if not result["contribution_metrics_valid"]:
+            print(json.dumps({
+                "status": "BLOCKED_INCOMPLETE_EXPERIMENT",
+                "errors": result["incomplete_reasons"],
+            }, ensure_ascii=False))
+            return 3
         out = Path(args.out_dir)
-        out.mkdir(parents=True, exist_ok=True)
-        targets = [out / "contribution-summary.json", out / "strategy-contribution.csv", out / "strategy-group-removal-loss.csv", out / "strategy-contribution-by-scope.csv"]
-        if not args.overwrite:
-            existing = [str(x) for x in targets if x.exists()]
-            if existing:
-                raise FileExistsError("拒绝覆盖已有文件: " + ", ".join(existing))
+        out.mkdir(parents=True, exist_ok=False)
+        targets = [
+            out / "contribution-summary.json",
+            out / "strategy-contribution-file.csv",
+            out / "strategy-contribution-pair.csv",
+            out / "strategy-group-removal-loss-file.csv",
+            out / "strategy-group-removal-loss-pair.csv",
+            out / "strategy-contribution-by-scope.csv",
+        ]
         targets[0].write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         write_csv(targets[1], result["strategy_metrics"])
-        write_csv(targets[2], result["group_removal_loss"])
-        write_csv(targets[3], result["strategy_metrics_by_scope"])
-        print(json.dumps({"status": "PASS" if result["contribution_metrics_valid"] else "INCOMPLETE",
-                          "image_count": result["image_count"], "all_success_images": result["all_success_images"],
-                          "incomplete_reasons": result["incomplete_reasons"], "output": str(out.resolve())}, ensure_ascii=False))
-        return 0 if result["contribution_metrics_valid"] else 3
+        write_csv(targets[2], result["pair_strategy_metrics"])
+        write_csv(targets[3], result["file_group_removal_loss"])
+        write_csv(targets[4], result["pair_group_removal_loss"])
+        write_csv(targets[5], result["strategy_metrics_by_scope"])
+        print(json.dumps({
+            "status": "PASS", "images": result["image_count"],
+            "success_images": result["all_success_images"],
+            "eligible_pairs": result["eligible_pair_count"],
+            "success_pairs": result["all_success_pairs"],
+            "out_dir": str(out.resolve()),
+        }, ensure_ascii=False))
+        return 0
     except Exception as exc:
         print(json.dumps({"status": "ERROR", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,59 +1,80 @@
-# 现有 28 条扫描策略的接入契约
+# Generic Strategy and Decoder Adapter Contract
 
-`qr-audit` 的内置 Python 参考扫描器只能做 V01–V03 基线扫描。要测量**原有 28 条策略的真实贡献**，应复用用户项目中的解码器与原有预处理函数，而不是按名称凭空重写。
+QR Audit ships a reference implementation for V01–V03 only. It does not recreate the user's existing V04–V28 preprocessing logic. The adapter contract lets an existing scanner register its real functions without changing their image algorithms.
 
-## A. 先审计、后接线
+## Module entrypoint
 
-1. 阅读扫描入口及解码器实际依赖，定位当前全部 28 条策略的实现（若未找到，标 `NOT_VERIFIED`）。
-2. 给每条策略建立 `V01`–`V28` → 源码文件/函数/参数/执行条件的映射。
-3. 审计 `isPure`、`tryInvert`、`tryRotate`、`tryDownscale` 和是否有多码成功后短路。
-4. 记录源码 Git HEAD、dirty 状态、相关文件 SHA-256 和运行配置 SHA-256。
-5. 只在获得用户同意后添加少量日志/适配代码；优先通过独立包装调用原有函数，不改变其图像处理细节或参数。
-
-## B. 每次尝试的最小接口
-
-建议包装层提供与下面行为等价的调用（这是契约，不是宣称用户代码已经有这个接口）：
+Create an importable Python module with:
 
 ```python
-# 伪代码，仅说明协议，不直接运行
-attempt = execute_existing_variant(
-    image_path=image_abs_path,
-    strategy_id='V23',
-    decoder_id='zxingcpp',
-    disable_early_stop=True,
-)
+def register_qr_audit(strategies, decoders, context):
+    strategies.register(
+        "V04",
+        transform=existing_v04_transform,
+        version="scanner-build-2026.11",
+        parameters={"scale": 4, "border_modules": 4},
+        applicability=eligible_for_v04,
+    )
+    decoders.register(
+        "my_decoder",
+        decode=decode_with_existing_decoder,
+        version="decoder-actual-version",
+        options={"try_harder": True},
+    )
 ```
 
-返回记录必须包含 `run_id`、`image_id`、`strategy_id`、`decoder_id`、`status`、`duration_ms`、载荷或载荷哈希、异常/跳过原因。优先保留完整多码结果（`all_payloads`），同时报告最先获得的载荷，以免多码时丢失信息。
+The module is imported locally. It must not perform network access, install dependencies, log in to WeChat, or open decoded URLs.
 
-不管策略成功与否，**贡献度模式**都必须完成该图像全部符合条件的策略和解码器组合。仅因成功解码而不继续执行是不合格的。
+## Strategy transform
 
-## C. 必须生成的证据
-
-```text
-<本次 run>/evidence/
-  inventory.json
-  run-manifest.json
-  attempts.jsonl
-  decoder-build-info.json       # 可选，对 OpenCV/ZXing 版本更精确
-  source-audit.md               # 人工源码阅读及真实定位说明
-  source-hashes.json            # 各代码/配置文件 SHA-256
-  logs/
+```python
+def transform(image, context, parameters):
+    # Return the transformed image object consumed by decoder adapters.
+    # Do not mutate the original source file.
+    return existing_preprocess(image, **parameters)
 ```
 
-## D. 运行统计
+The callable receives `(image, context, parameters)`. The context currently includes `cv2`, `numpy`, `input_root`, the selected run mode, and mutable `source_files` / `dependencies` lists. An adapter that delegates to helper source files should append their paths to `context["source_files"]`; add each external package/build as `{"name": "...", "version": "..." }` to `context["dependencies"]`. Declared source files are SHA-256 fingerprinted and missing paths block the run.
 
-所有行记录应能对应到 `manifest.images × manifest.strategy_order × manifest.decoders`。不能因为某条策略没有被执行，就省略对应 attempt 行。
+Optional applicability callback:
 
-用：
+```python
+def eligible(image_meta, context, parameters):
+    return True
+    # or: return False, "LOW_RESOLUTION"
+```
+
+A false result is recorded as `SKIPPED_INELIGIBLE` with its reason. Missing executor implementations are recorded as `NOT_RUN / NOT_IMPLEMENTED`, never as ineligible.
+
+## Decoder adapter
+
+The callable receives `(transformed_image, context, options)` and returns either:
+
+```python
+{"payloads": ["QR payload A", "QR payload B"], "candidate_count": 2}
+```
+
+or a compatible `(payloads, candidate_count)` tuple. Return every QR payload found, not only the first. QR Audit records UTF-8 text identities by default. If the decoder exposes only a hash, return payload identity objects with explicit algorithm, scope and value; never label an unknown hash scope as decoded-text SHA-256.
+
+## Registering the existing 28 strategies
+
+The initial registry remains the frozen source of strategy IDs and order. Register the actual implementation against its existing `V01`–`V28` ID. If a strategy definition is intentionally added or renamed, update and review the registry as a separate change so the registry fingerprint changes visibly.
+
+The adapter may replace a built-in reference implementation only by passing `replace=True`. This must be explicit and should be used only when source audit confirms the replacement is the user's actual implementation.
+
+## Running
+
+Make the module importable on `PYTHONPATH`, then:
 
 ```powershell
-python "<SKILL_ROOT>\scripts\validate_evidence.py" --manifest "<run>\evidence\run-manifest.json" --attempts "<run>\evidence\attempts.jsonl"
-python "<SKILL_ROOT>\scripts\run.py" contribution --manifest "<run>\evidence\run-manifest.json" --attempts "<run>\evidence\attempts.jsonl" --out-dir "<新的贡献度统计目录>"
+python scripts/run.py scan --input-root <images> --report-root <reports> --adapter-module my_qr_adapter --decoder my_decoder
+python scripts/run.py scan --experiment-mode contribution --input-root <images> --report-root <reports> --adapter-module my_qr_adapter --decoder my_decoder
 ```
 
-输出含 `strategy-contribution.csv`、`strategy-contribution-by-scope.csv`、`strategy-group-removal-loss.csv` 和完整 JSON。类别贡献是“完整类别移除后召回损失”，不能从若干单策略独占贡献求和推断。
+Normal `scan` mode may stop after a successful strategy and records later attempts as `SKIPPED_EARLY_STOP`. Contribution mode disables early stopping and executes every registered strategy/selected decoder combination. An unregistered strategy or unavailable decoder is an explicit `NOT_RUN` and blocks complete contribution metrics.
 
-## E. 禁止伪装的能力
+## Fingerprints and evidence
 
-`NOT_RUN` 和 `SKIPPED_INELIGIBLE` 必须写明原因。缺少实现、缺少解码器、网络不可用、没有读到源码，不能被包装成“图片没有二维码”。算法无法接入时停止完整贡献度结论，保留基线扫描和源码审计成果。
+QR Audit records the adapter module's local source path and SHA-256 along with its own scanner files and registry. The validator checks those files still match. If the adapter delegates to external native libraries, record their exact versions and build identities in decoder metadata/options and the run's dependency evidence.
+
+A keyword search hit is only `HINT_ONLY`. A registered function is `EXECUTOR_REGISTERED`; source confirmation and runtime confirmation remain separate audit states.

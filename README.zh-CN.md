@@ -1,17 +1,17 @@
 # QR Audit — 离线二维码扫描与策略审计 Skill
 
 **Skill 名称：** `qr-audit`  
-**版本：** `1.0.1`  
+**版本：** `1.1.0`  
 **用途：** 二维码离线批量扫描、扫描器源码审计、策略贡献度实验，以及 Markdown + 静态离线 HTML 报告交付。
 
 ## 能做什么
 
-- 扫描用户指定的单目录、多组目录或左右配对目录。
+- 递归扫描用户指定的单目录、多组目录或左右配对目录，混合结构不漏组。
 - 默认识别 `WAVES_QR` / `WAVES_QR_RAW`，也支持用户指定其他目录名。
 - 保留并追踪 28 条初始预处理策略。
 - 审计真实源码、参数、解码器选项、提前停止和模块采样实现。
 - 分开执行常规扫描与完整贡献度实验。
-- 统计顺序新增、重复成功、独占贡献、平均耗时、P95 和整类策略移除损失。
+- 统计文件级与配对级顺序新增、重复成功、独占贡献、平均耗时、P95 和整类策略移除损失。
 - 输出每组至少 3 份 MD，以及每份 MD 对应的 HTML。
 - 保留原图、源码、历史报告；每次运行独立留证。
 
@@ -59,12 +59,13 @@ Copy-Item -Recurse ".\qr-audit" "$HOME\.claude\skills\qr-audit"
 本 Skill 的清点、证据校验、审计候选检索、贡献度分析和 HTML 生成使用 Python 标准库；**内置实际扫描器需要本机已安装 `opencv-python` 和 `numpy`**，`zxingcpp` 是可选的第二解码引擎。不会静默安装依赖。
 
 - `run.py`：统一命令入口（scan、audit、contribution、all）。
-- `scan_images.py`：可实跑的 V01–V03 离线基线扫描；V04–V28 需要对接现有项目实现。
+- `scan_images.py`：V01–V03 参考离线扫描器，支持普通扫描和关闭提前停止的贡献度模式；可通过适配器接入 V04–V28。
 - `build_report_models.py`：由本次 attempts 和 inventory 构建每组左右及总报告。
 - `audit_source.py`：只读源码关键词定位候选，不会把命中认定为实现已确认。
 - `inventory_images.py`：输入图片清点、SHA-256 和目录配对。
 - `analyze_contributions.py`：策略贡献度和整类移除损失。
-- `validate_evidence.py`：扫描尝试记录与实验完整性检查。
+- `validate_evidence.py` + `evidence_contract.py`：schema 2.0 证据归属、哈希、重试、来源和完整性校验。
+- `executor_registry.py`：通用策略变换与解码器适配器注册契约。
 - `render_reports.py`：从同一结构化数据生成 MD + HTML。
 - `install_tools.py`：将辅助工具安全导出到业务工作区的 `qr-tools/` 下。
 
@@ -105,11 +106,19 @@ python "$skill\scripts\run.py" scan --input-root "$input" --report-root "$report
 # 只读源码审计候选（不能以关键词命中代替人工核对）
 python "$skill\scripts\run.py" audit --source-root (Join-Path $project 'qr-tools') --output (Join-Path $reports 'audit-hints.json')
 
-# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.0.1
+# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.1.0
 python "$skill\scripts\install_tools.py" --workspace "$project"
 ```
 
-> `scan` 的返回状态是 `PASS_BASELINE_ONLY`，这意味着已执行的基础扫码有真实结果，但不等于全部 28 条策略均执行。完成完整贡献度实验后使用 `contribution --manifest ... --attempts ... --out-dir ...`，在矩阵缺失、提前停止、未实现或执行失败时严格返回阻断。
+> `scan` 的返回状态是 `PASS_BASELINE_ONLY`，不等于全部 28 条策略均执行。贡献度分析必须同时提供 `manifest`、`attempts`、扫描前 `inventory`、扫描后 `inventory-after` 和冻结注册表；运行前后输入变化、来源指纹未核验、矩阵缺失、提前停止、未实现、不可用解码器或矛盾重试都会阻断有效贡献度结论。
+
+## 证据契约与执行器接入
+
+- 证据升级为 schema 2.0：attempt 必须绑定 run_id、image_id、group_id、side_id、相对路径和输入 SHA-256；重试使用唯一 attempt_id 与连续 attempt_index。
+- 扫描前后重新清点图片，发现内容变化、新增或删除时保留证据但阻断有效贡献度结论。
+- 文件级与配对级指标分开；pair_id 同时包含 group_id 和规范化配对键。缺失侧、单目录、歧义配对不强行纳入配对分母。
+- 哈希-only 载荷必须明确 algorithm 和 scope；多二维码按无序身份集合比较；MD 与 HTML 使用同一判定模型。
+- 通过 `--adapter-module` 注册真实策略和解码器；贡献度模式关闭提前停止。详见 [执行器接入契约](references/adapter-contract.md) 与 [证据契约](references/evidence-contract.md)。
 
 ## Gen UI 可选集成
 
