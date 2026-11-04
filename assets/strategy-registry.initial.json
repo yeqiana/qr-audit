@@ -1,0 +1,749 @@
+{
+  "schema_version": "1.0",
+  "registry_id": "qr-audit.initial-28",
+  "description": "用户提供的 28 条初始二维码扫描策略。名称与顺序固定；具体实现、参数和运行状态必须从源码与本次运行证据核实。",
+  "policy": {
+    "preserve_all": true,
+    "automatic_deletion_allowed": false,
+    "unknown_parameters_must_remain_null": true,
+    "initial_implementation_status": "NOT_VERIFIED"
+  },
+  "strategies": [
+    {
+      "strategy_id": "V01",
+      "order": 1,
+      "name_zh": "原图",
+      "family": "baseline",
+      "tags": [],
+      "parameters": {
+        "scale_factor": null,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V02",
+      "order": 2,
+      "name_zh": "灰度",
+      "family": "grayscale",
+      "tags": [],
+      "parameters": {
+        "scale_factor": null,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V03",
+      "order": 3,
+      "name_zh": "自动对比度",
+      "family": "contrast",
+      "tags": [],
+      "parameters": {
+        "scale_factor": null,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V04",
+      "order": 4,
+      "name_zh": "对比度 + Otsu + 放大 4 倍 + 白边",
+      "family": "thresholding",
+      "tags": [
+        "otsu",
+        "upscale_4x",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": 4,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V05",
+      "order": 5,
+      "name_zh": "对比度 + 自适应 + 放大 4 倍 + 白边",
+      "family": "thresholding",
+      "tags": [
+        "adaptive_threshold",
+        "upscale_4x",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": 4,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V06",
+      "order": 6,
+      "name_zh": "灰度 + Otsu + 放大 4 倍 + 白边",
+      "family": "thresholding",
+      "tags": [
+        "otsu",
+        "upscale_4x",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": 4,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V07",
+      "order": 7,
+      "name_zh": "灰度 + 自适应 + 放大 4 倍 + 白边",
+      "family": "thresholding",
+      "tags": [
+        "adaptive_threshold",
+        "upscale_4x",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": 4,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V08",
+      "order": 8,
+      "name_zh": "正常最近邻放大 4 倍",
+      "family": "upscale",
+      "tags": [
+        "nearest_neighbor",
+        "upscale_4x"
+      ],
+      "parameters": {
+        "scale_factor": 4,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": "nearest_neighbor",
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V09",
+      "order": 9,
+      "name_zh": "正常放大 4 倍 + 白边",
+      "family": "upscale",
+      "tags": [
+        "upscale_4x",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": 4,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V10",
+      "order": 10,
+      "name_zh": "正常放大 4 倍 + 白边 + 纯码模式",
+      "family": "upscale",
+      "tags": [
+        "upscale_4x",
+        "white_border",
+        "pure_mode"
+      ],
+      "parameters": {
+        "scale_factor": 4,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": true
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V11",
+      "order": 11,
+      "name_zh": "正常最近邻放大 8 倍",
+      "family": "upscale",
+      "tags": [
+        "nearest_neighbor",
+        "upscale_8x"
+      ],
+      "parameters": {
+        "scale_factor": 8,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": "nearest_neighbor",
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V12",
+      "order": 12,
+      "name_zh": "正常放大 8 倍 + 白边",
+      "family": "upscale",
+      "tags": [
+        "upscale_8x",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": 8,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V13",
+      "order": 13,
+      "name_zh": "正常放大 8 倍 + 白边 + 纯码模式",
+      "family": "upscale",
+      "tags": [
+        "upscale_8x",
+        "white_border",
+        "pure_mode"
+      ],
+      "parameters": {
+        "scale_factor": 8,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": true
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V14",
+      "order": 14,
+      "name_zh": "反色最近邻放大 4 倍",
+      "family": "inversion",
+      "tags": [
+        "invert",
+        "nearest_neighbor",
+        "upscale_4x"
+      ],
+      "parameters": {
+        "scale_factor": 4,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": "nearest_neighbor",
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V15",
+      "order": 15,
+      "name_zh": "反色放大 4 倍 + 白边",
+      "family": "inversion",
+      "tags": [
+        "invert",
+        "upscale_4x",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": 4,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V16",
+      "order": 16,
+      "name_zh": "反色放大 4 倍 + 白边 + 纯码模式",
+      "family": "inversion",
+      "tags": [
+        "invert",
+        "upscale_4x",
+        "white_border",
+        "pure_mode"
+      ],
+      "parameters": {
+        "scale_factor": 4,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": true
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V17",
+      "order": 17,
+      "name_zh": "反色最近邻放大 8 倍",
+      "family": "inversion",
+      "tags": [
+        "invert",
+        "nearest_neighbor",
+        "upscale_8x"
+      ],
+      "parameters": {
+        "scale_factor": 8,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": "nearest_neighbor",
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V18",
+      "order": 18,
+      "name_zh": "反色放大 8 倍 + 白边",
+      "family": "inversion",
+      "tags": [
+        "invert",
+        "upscale_8x",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": 8,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V19",
+      "order": 19,
+      "name_zh": "反色放大 8 倍 + 白边 + 纯码模式",
+      "family": "inversion",
+      "tags": [
+        "invert",
+        "upscale_8x",
+        "white_border",
+        "pure_mode"
+      ],
+      "parameters": {
+        "scale_factor": 8,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": true
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V20",
+      "order": 20,
+      "name_zh": "阈值 64 + 放大 + 白边",
+      "family": "fixed_threshold",
+      "tags": [
+        "fixed_threshold",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": null,
+        "fixed_threshold": 64,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V21",
+      "order": 21,
+      "name_zh": "阈值 128 + 放大 + 白边",
+      "family": "fixed_threshold",
+      "tags": [
+        "fixed_threshold",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": null,
+        "fixed_threshold": 128,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V22",
+      "order": 22,
+      "name_zh": "阈值 192 + 放大 + 白边",
+      "family": "fixed_threshold",
+      "tags": [
+        "fixed_threshold",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": null,
+        "fixed_threshold": 192,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V23",
+      "order": 23,
+      "name_zh": "按 2 倍模块采样 + 放大 + 白边",
+      "family": "module_sampling",
+      "tags": [
+        "module_sampling_2x",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": null,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V24",
+      "order": 24,
+      "name_zh": "按 2 倍模块采样 + 放大 + 白边 + 纯码模式",
+      "family": "module_sampling",
+      "tags": [
+        "module_sampling_2x",
+        "white_border",
+        "pure_mode"
+      ],
+      "parameters": {
+        "scale_factor": null,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": true
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V25",
+      "order": 25,
+      "name_zh": "按 3 倍模块采样 + 放大 + 白边",
+      "family": "module_sampling",
+      "tags": [
+        "module_sampling_3x",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": null,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V26",
+      "order": 26,
+      "name_zh": "按 3 倍模块采样 + 放大 + 白边 + 纯码模式",
+      "family": "module_sampling",
+      "tags": [
+        "module_sampling_3x",
+        "white_border",
+        "pure_mode"
+      ],
+      "parameters": {
+        "scale_factor": null,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": true
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V27",
+      "order": 27,
+      "name_zh": "按 4 倍模块采样 + 放大 + 白边",
+      "family": "module_sampling",
+      "tags": [
+        "module_sampling_4x",
+        "white_border"
+      ],
+      "parameters": {
+        "scale_factor": null,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": false
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    },
+    {
+      "strategy_id": "V28",
+      "order": 28,
+      "name_zh": "按 4 倍模块采样 + 放大 + 白边 + 纯码模式",
+      "family": "module_sampling",
+      "tags": [
+        "module_sampling_4x",
+        "white_border",
+        "pure_mode"
+      ],
+      "parameters": {
+        "scale_factor": null,
+        "fixed_threshold": null,
+        "white_border_modules": null,
+        "interpolation": null,
+        "contrast_method": null,
+        "adaptive_threshold_parameters": null,
+        "module_grid_localization": null
+      },
+      "decoder_profile": {
+        "pure_mode": true
+      },
+      "implementation_status": "NOT_VERIFIED",
+      "source_location": null,
+      "runtime_confirmed": false,
+      "notes": "策略定义来自用户清单；本条是否真实实现及其参数需源码审计和运行证据确认。"
+    }
+  ]
+}

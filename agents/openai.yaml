@@ -1,0 +1,4 @@
+interface:
+  display_name: "QR Audit"
+  short_description: "离线二维码扫描、策略源码审计、28策略贡献度实验和 MD/HTML 报告"
+  default_prompt: "使用 $qr-audit 对我指定的本地二维码扫描工程进行离线扫码和策略审计，保留原图及历史报告，不访问二维码链接。每组输出左右目录及配对总表三份 Markdown 与同名离线 HTML；完整贡献度实验必须真实执行所有符合条件的策略并记录整类移除损失。"

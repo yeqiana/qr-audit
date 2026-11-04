@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "reports": [
+    {
+      "file_stem": "1. sample-WAVES_QR-扫描结果",
+      "title": "sample / WAVES_QR 扫描结果",
+      "status": "NOT_VERIFIED",
+      "generated_at": "EXAMPLE_ONLY",
+      "metrics": [
+        {"label": "图片文件数", "value": 1},
+        {"label": "离线解码成功", "value": "NOT_VERIFIED"}
+      ],
+      "sections": [
+        {"type": "paragraph", "text": "这是格式示例，不代表任何实际扫描已执行。"},
+        {"type": "table", "title": "图片结果", "headers": ["图片名称", "解码结果", "载荷"], "rows": [["a.png", "NOT_VERIFIED", {"text": "https://example.invalid/?x=1|2", "code": true}]]}
+      ]
+    }
+  ]
+}
