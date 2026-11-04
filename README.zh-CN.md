@@ -1,7 +1,7 @@
 # QR Audit — 离线二维码扫描与策略审计 Skill
 
 **Skill 名称：** `qr-audit`  
-**版本：** `1.1.0`  
+**版本：** `1.2.0`
 **用途：** 二维码离线批量扫描、扫描器源码审计、策略贡献度实验，以及 Markdown + 静态离线 HTML 报告交付。
 
 ## 能做什么
@@ -106,7 +106,7 @@ python "$skill\scripts\run.py" scan --input-root "$input" --report-root "$report
 # 只读源码审计候选（不能以关键词命中代替人工核对）
 python "$skill\scripts\run.py" audit --source-root (Join-Path $project 'qr-tools') --output (Join-Path $reports 'audit-hints.json')
 
-# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.1.0
+# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.2.0
 python "$skill\scripts\install_tools.py" --workspace "$project"
 ```
 
@@ -119,6 +119,17 @@ python "$skill\scripts\install_tools.py" --workspace "$project"
 - 文件级与配对级指标分开；pair_id 同时包含 group_id 和规范化配对键。缺失侧、单目录、歧义配对不强行纳入配对分母。
 - 哈希-only 载荷必须明确 algorithm 和 scope；多二维码按无序身份集合比较；MD 与 HTML 使用同一判定模型。
 - 通过 `--adapter-module` 注册真实策略和解码器；贡献度模式关闭提前停止。详见 [执行器接入契约](references/adapter-contract.md) 与 [证据契约](references/evidence-contract.md)。
+
+## 真实扫描器接入（外部本地 CLI）
+
+无需复制或重写原扫描器的图像增强算法。使用 [真实扫描器接入与验收](docs/real-scanner-onboarding.md) 中的配置，逐一登记经过源码确认的策略 ID 到原始扫描器策略 ID 的映射。
+
+```powershell
+$env:QR_AUDIT_BRIDGE_CONFIG = 'D:\\absolute\\path\\bridge-config.json'
+python scripts/run.py scan --experiment-mode contribution --input-root 'D:\\images' --report-root 'D:\\reports' --adapter-module external_cli_adapter --decoder native
+```
+
+外部程序必须针对每次尝试返回与 run_id、image_id、原图 SHA-256 和 native_strategy 对应的 JSON 证据；无法对齐、缺少策略或执行异常均阻断可信贡献度结论。未接入本地真实扫描器前，不能宣称已完成 28 策略接入或降低 709 对样本的人工复核率。
 
 ## Gen UI 可选集成
 

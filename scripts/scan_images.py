@@ -214,37 +214,67 @@ def attempt_record(run_id, image_meta, strategy_id, decoder, status, started,
 def execute_image_matrix(run_id, image_meta, strategy_order, strategy_executors,
                          decoder_executors, decoder_ids, mode, image_loader, context,
                          max_pixels=50000000):
-    """Execute one image against registered transforms and decoders; isolated for adapter tests."""
+    """One declared record per logical image×strategy×decoder combination.
+
+    Source-file adapters can delegate to existing native scanners without
+    OpenCV/NumPy and without claiming Python performed image preprocessing.
+    """
+    from evidence_contract import text_identity, payload_identities
+
     records = []
     image_success = False
     for order, strategy_id in enumerate(strategy_order, 1):
         strategy = strategy_executors.get(strategy_id)
         stopped = mode == "scan" and image_success
-        transformed = None
         transform_error = None
         ineligible_reason = None
         transform_ms = 0.0
+        transformed = None
+        strategy_context = dict(
+            context, image_meta=image_meta, strategy_id=strategy_id, run_id=run_id
+        )
 
         if not stopped and strategy is None:
             transform_error = "NOT_IMPLEMENTED: no strategy executor registered"
         elif not stopped and strategy is not None:
             if not image_meta.get("sha256"):
-                transform_error = "INPUT_HASH_UNAVAILABLE: source image could not be fingerprinted"
-            elif strategy.applicability is not None:
-                applicable = strategy.applicability(image_meta, context, strategy.parameters)
-                if isinstance(applicable, tuple):
-                    applicable, ineligible_reason = applicable
-                if not applicable:
-                    ineligible_reason = ineligible_reason or "STRATEGY_NOT_APPLICABLE"
+                transform_error = "INPUT_HASH_UNAVAILABLE: original file hash is missing"
+            elif strategy.input_mode == "pixels" and (
+                context.get("cv2") is None or context.get("numpy") is None
+            ):
+                # Legacy synthetic tests supply their own loader and no cv2.
+                if context.get("require_image_dependencies", False):
+                    transform_error = "DEPENDENCY_MISSING: OpenCV / NumPy are unavailable"
+            if not transform_error and strategy.applicability is not None:
+                try:
+                    applicable = strategy.applicability(
+                        image_meta, strategy_context, strategy.parameters
+                    )
+                    if isinstance(applicable, tuple):
+                        applicable, ineligible_reason = applicable
+                    if not applicable:
+                        ineligible_reason = ineligible_reason or "STRATEGY_NOT_APPLICABLE"
+                except Exception as exc:
+                    transform_error = f"APPLICABILITY_ERROR: {type(exc).__name__}: {exc}"
             if not ineligible_reason and not transform_error:
                 try:
                     started = time.perf_counter()
-                    original = image_loader(image_meta)
-                    if original.shape[0] * original.shape[1] > max_pixels:
-                        raise ValueError("MAX_PIXELS_EXCEEDED")
-                    transformed = strategy.transform(original, context, strategy.parameters)
+                    if strategy.input_mode == "source_file":
+                        original = image_meta["path"]
+                    else:
+                        original = image_loader(image_meta)
+                        if original.shape[0] * original.shape[1] > max_pixels:
+                            raise ValueError("MAX_PIXELS_EXCEEDED")
+                    transformed = strategy.transform(
+                        original, strategy_context, strategy.parameters
+                    )
                     if transformed is None:
                         raise ValueError("strategy transform returned None")
+                    if strategy.input_mode == "source_file":
+                        variant_path = Path(transformed).resolve(strict=True)
+                        if not variant_path.is_file():
+                            raise ValueError("source_file transform must return a file path")
+                        transformed = str(variant_path)
                     transform_ms = (time.perf_counter() - started) * 1000
                 except Exception as exc:
                     transform_error = f"{type(exc).__name__}: {exc}"
@@ -253,8 +283,11 @@ def execute_image_matrix(run_id, image_meta, strategy_order, strategy_executors,
             decoder = decoder_executors.get(decoder_id)
             if decoder is None:
                 raise ValueError(f"decoder registry missing declared decoder: {decoder_id}")
-            record = attempt_record(run_id, image_meta, strategy_id, decoder, "NOT_RUN", time.perf_counter())
+            record = attempt_record(
+                run_id, image_meta, strategy_id, decoder, "NOT_RUN", time.perf_counter()
+            )
             record["strategy_order"] = order
+            record["input_mode"] = strategy.input_mode if strategy else "NOT_CONNECTED"
             record["transform_duration_ms"] = round(transform_ms, 3)
             if stopped:
                 record["status"] = "SKIPPED_EARLY_STOP"
@@ -269,21 +302,52 @@ def execute_image_matrix(run_id, image_meta, strategy_order, strategy_executors,
                 record["status"] = "NOT_RUN"
                 record["skip_reason"] = decoder.unavailable_reason or "DECODER_UNAVAILABLE"
             elif transform_error:
-                record["status"] = "ERROR"
-                record["error"] = transform_error
+                if transform_error.startswith(("DEPENDENCY_MISSING", "INPUT_HASH_UNAVAILABLE")):
+                    record["status"] = "NOT_RUN"
+                    record["skip_reason"] = transform_error
+                else:
+                    record["status"] = "ERROR"
+                    record["error"] = transform_error
             else:
                 started = time.perf_counter()
                 try:
-                    payloads, candidate_count = normalize_decode_result(
-                        decoder.decode(transformed, context, decoder.options)
-                    )
+                    decoder_context = dict(strategy_context, decoder_id=decoder_id)
+                    raw_result = decoder.decode(transformed, decoder_context, decoder.options)
+                    payloads, candidate_count = normalize_decode_result(raw_result)
+                    native_status = raw_result.get("status") if isinstance(raw_result, dict) else None
+                    if native_status is not None and native_status not in (
+                        "DECODED", "DETECTED_ONLY", "NO_DECODE", "ERROR",
+                        "NOT_RUN", "SKIPPED_INELIGIBLE"
+                    ):
+                        raise ValueError(f"unsupported decoder status: {native_status}")
                     record["candidate_count"] = candidate_count
-                    record["variant_width"] = int(transformed.shape[1])
-                    record["variant_height"] = int(transformed.shape[0])
-                    record["variant_sha256"] = hashlib.sha256(transformed.tobytes()).hexdigest()
                     record["duration_ms"] = round((time.perf_counter() - started) * 1000, 3)
-                    if payloads:
-                        from evidence_contract import text_identity
+                    if strategy.input_mode == "source_file":
+                        record["variant_width"] = None
+                        record["variant_height"] = None
+                        record["variant_sha256"] = file_sha256(transformed)
+                    else:
+                        record["variant_width"] = int(transformed.shape[1])
+                        record["variant_height"] = int(transformed.shape[0])
+                        record["variant_sha256"] = hashlib.sha256(transformed.tobytes()).hexdigest()
+                    if isinstance(raw_result, dict):
+                        for field in (
+                            "native_strategy_id", "native_decoder_id",
+                            "native_scanner_version", "bridge_config_sha256"
+                        ):
+                            if field in raw_result:
+                                record[field] = raw_result[field]
+                    if native_status in ("SKIPPED_INELIGIBLE", "NOT_RUN", "ERROR"):
+                        if payloads:
+                            raise ValueError("native non-DECODED result returned payloads")
+                        record["status"] = native_status
+                        if native_status == "ERROR":
+                            record["error"] = raw_result.get("error") or "NATIVE_SCANNER_ERROR"
+                        else:
+                            record["skip_reason"] = raw_result.get("skip_reason") or "NATIVE_NOT_EXECUTED"
+                    elif payloads:
+                        if native_status in ("NO_DECODE", "DETECTED_ONLY"):
+                            raise ValueError("native status contradicts returned payloads")
                         entries = []
                         for value in payloads:
                             if isinstance(value, str):
@@ -305,23 +369,37 @@ def execute_image_matrix(run_id, image_meta, strategy_order, strategy_executors,
                             entries.append({"text": text_value, "identity": identity})
                         record["status"] = "DECODED"
                         record["payloads"] = entries
-                        first_text = next((item["text"] for item in entries if item["text"] not in (None, "")), None)
+                        first_text = next(
+                            (item["text"] for item in entries if item["text"] not in (None, "")),
+                            None,
+                        )
                         record["payload"] = first_text
                         first_identity = entries[0]["identity"]
                         if first_identity.get("algorithm") == "sha256":
                             record["payload_sha256"] = first_identity["value"]
                             record["payload_hash_algorithm"] = first_identity["algorithm"]
                             record["payload_hash_scope"] = first_identity["scope"]
-                        record["all_payloads"] = [item["text"] for item in entries if item["text"] not in (None, "")]
+                        record["all_payloads"] = [
+                            item["text"] for item in entries if item["text"] not in (None, "")
+                        ]
+                        # Reject inconsistent text/hash from the native decoder.
+                        payload_identities(record)
                         image_success = True
                     else:
-                        record["status"] = "DETECTED_ONLY" if candidate_count else "NO_DECODE"
+                        if native_status == "DECODED":
+                            raise ValueError("native DECODED result has no payload")
+                        if native_status == "DETECTED_ONLY" and candidate_count == 0:
+                            raise ValueError("native DETECTED_ONLY has no candidates")
+                        record["status"] = native_status or (
+                            "DETECTED_ONLY" if candidate_count else "NO_DECODE"
+                        )
                 except Exception as exc:
                     record["status"] = "ERROR"
                     record["error"] = f"{type(exc).__name__}: {exc}"
                     record["duration_ms"] = round((time.perf_counter() - started) * 1000, 3)
             records.append(record)
     return records, image_success
+
 
 
 def run_scan(input_root, report_root, workspace_root=None, decoders=None,
@@ -335,20 +413,35 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
     if mode not in ("scan", "contribution"):
         raise ValueError("mode must be scan or contribution")
 
-    cv2 = get_library("cv2")
-    np = get_library("numpy")
+    # External source-file adapters need no image-decoding dependencies.
+    try:
+        cv2 = get_library("cv2")
+        np = get_library("numpy")
+    except RuntimeError:
+        cv2, np = None, None
     strategy_executors = StrategyExecutorRegistry()
     decoder_executors = DecoderExecutorRegistry()
-    register_builtin_strategies(strategy_executors, cv2)
     zxing = None
-    try:
-        zxing = get_library("zxingcpp")
-    except RuntimeError:
-        pass
-    register_builtin_decoders(decoder_executors, cv2, zxing)
+    if cv2 is not None and np is not None:
+        register_builtin_strategies(strategy_executors, cv2)
+        try:
+            zxing = get_library("zxingcpp")
+        except RuntimeError:
+            pass
+        register_builtin_decoders(decoder_executors, cv2, zxing)
+    else:
+        decoder_executors.register(
+            "opencv", None, version="UNAVAILABLE", available=False,
+            unavailable_reason="DECODER_UNAVAILABLE: OpenCV and NumPy are not installed",
+        )
+        decoder_executors.register(
+            "zxingcpp", None, version="UNAVAILABLE", available=False,
+            unavailable_reason="DECODER_UNAVAILABLE: OpenCV and NumPy are not installed",
+        )
     context = {
         "cv2": cv2, "numpy": np, "input_root": str(input_root), "mode": mode,
         "source_files": [], "dependencies": [],
+        "require_image_dependencies": True,
     }
     loaded_adapters = load_adapter_modules(adapter_modules or [], strategy_executors, decoder_executors, context)
 
@@ -374,11 +467,12 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
         run_id, inventory, workspace_root, registry, registry_path,
         strategy_executors, decoder_executors, loaded_adapters, mode, requested_decoders, context,
     )
-    manifest["dependencies"] = [
-        {"name": "python", "version": sys.version.split()[0]},
-        {"name": "opencv-python", "version": str(getattr(cv2, "__version__", "UNKNOWN"))},
-        {"name": "numpy", "version": str(getattr(np, "__version__", "UNKNOWN"))},
-    ]
+    manifest["dependencies"] = [{"name": "python", "version": sys.version.split()[0]}]
+    if cv2 is not None and np is not None:
+        manifest["dependencies"].extend([
+            {"name": "opencv-python", "version": str(getattr(cv2, "__version__", "UNKNOWN"))},
+            {"name": "numpy", "version": str(getattr(np, "__version__", "UNKNOWN"))},
+        ])
     manifest["dependencies"].extend(context.get("dependencies", []))
     if zxing is not None and any(x == "zxingcpp" for x in requested_decoders):
         manifest["dependencies"].append({

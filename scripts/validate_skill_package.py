@@ -5,10 +5,13 @@ ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = [
     "SKILL.md", "README.md", "assets/strategy-registry.initial.json",
     "scripts/run.py", "scripts/inventory_images.py", "scripts/scan_images.py",
+    "scripts/external_cli_adapter.py",
     "scripts/executor_registry.py", "scripts/evidence_contract.py",
     "scripts/build_report_models.py", "scripts/render_reports.py",
     "scripts/analyze_contributions.py", "scripts/validate_evidence.py",
     "scripts/audit_source.py", "scripts/install_tools.py", "tests/test_tools.py",
+    "tests/test_external_cli_adapter.py", "tests/test_runtime_source_file.py",
+    "tests/test_evidence_hardening.py", "docs/real-scanner-onboarding.md",
 ]
 
 

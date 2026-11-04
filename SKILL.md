@@ -74,6 +74,12 @@ description: "QR Audit: offline QR code scanning, source-code auditing and prepr
 7. 多个解码器或策略返回不同载荷集合时标记载荷冲突并进入人工复核；单次识别到多个合法二维码按无序身份集合保留，不把多码本身视为冲突。
 8. 对二维码载荷中的 URL 只按文本记录，绝不打开、请求、解析远端页面或跟随重定向。
 
+### 外部扫描器桥接（可选）
+
+对 Java/C++ 等原生扫描器，使用 `scripts/external_cli_adapter.py` 实现本地进程级适配：环境变量 `QR_AUDIT_BRIDGE_CONFIG` 指向桥接 JSON。该模块只传递文件路径、策略身份和必要执行上下文，不实现新的图像增强。只有当原扫描器在每次结果中确认 `run_id`、`image_id`、`input_sha256`、策略及解码器归属后，才记录该结果。桥接器不会打开二维码载荷 URL，但无法替不受信任的外部原生程序保证无网络行为。
+
+未获取真实原扫描器源码与可执行程序时，只能交付桥接协议、合成执行证据和测试；不得把配置样例或合成执行器计为已接入的 28 个原生变体。详见 `docs/real-scanner-onboarding.md`。
+
 ## 能力 B：扫描器与策略源码审计
 
 必须逐项核对源码，不得只根据策略名称判断：
@@ -192,7 +198,7 @@ description: "QR Audit: offline QR code scanning, source-code auditing and prepr
 ```text
 <workspace_root>/
   qr-tools/
-    qr-audit-v1.1.0/
+    qr-audit-v1.2.0/
   检测文件/
     <组A>/
       WAVES_QR/

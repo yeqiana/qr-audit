@@ -93,6 +93,12 @@ Each input group produces at least **three Markdown files plus three same-stem H
 
 See the [file-vs-pair metrics](docs/metrics.md), [schema 2.0 evidence contract](references/evidence-contract.md), and [generic executor adapter](references/adapter-contract.md).
 
+## Existing native scanner CLI bridge
+
+If the 28 actual preprocessing variants live in a separate native program, the optional [native CLI bridge](docs/real-scanner-onboarding.md) can invoke that program **without reimplementing image transformations**. Configure `QR_AUDIT_BRIDGE_CONFIG` with an audited mapping of registry ID to native strategy ID, and use `--adapter-module external_cli_adapter --decoder native`. Each subprocess response must attest the run, source image SHA-256, strategy, decoder and payloads; mismatches block valid contribution evidence. The bridge uses literal argv and no shell, but it cannot sandbox an untrusted native executable.
+
+**Connection status:** This repository has an adapter interface and synthetic tests, not a verified implementation mapping for the user's actual 28 strategies. The native scanner and 709-pair image corpus must be available on the same Runner before real recall and manual-review metrics can be measured.
+
 ## Documentation
 
 - [README 中文版 / Chinese README](README.zh-CN.md)

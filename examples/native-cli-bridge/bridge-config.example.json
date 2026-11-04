@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "scanner_version": "REPLACE_WITH_REAL_SCANNER_VERSION",
+  "command": {
+    "executable": "C:\\absolute\\path\\to\\scanner.exe",
+    "args": [
+      "--input",
+      "{image_path}",
+      "--run",
+      "{run_id}",
+      "--image-id",
+      "{image_id}",
+      "--sha256",
+      "{input_sha256}",
+      "--strategy",
+      "{native_strategy}",
+      "--strategy-id",
+      "{strategy_id}",
+      "--decoder",
+      "{native_decoder}",
+      "--decoder-id",
+      "{decoder_id}",
+      "--output-json"
+    ],
+    "timeout_seconds": 30
+  },
+  "decoder": {
+    "decoder_id": "native",
+    "native_decoder": "REPLACE_WITH_REAL_DECODER",
+    "version": "REPLACE_WITH_REAL_VERSION"
+  },
+  "strategies": [
+    {
+      "strategy_id": "V01",
+      "native_strategy": "REPLACE_WITH_NATIVE_V01",
+      "version": "REPLACE_WITH_REAL_VERSION"
+    }
+  ],
+  "source_files": []
+}

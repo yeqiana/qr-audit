@@ -3,6 +3,8 @@
 Structural validation and provenance verification are reported separately.
 Payload hashes are comparable only when algorithm and byte/text scope match.
 """
+import base64
+import binascii
 import hashlib
 import json
 import math
@@ -86,6 +88,20 @@ def payload_identities(record):
                     computed = text_identity(text_value)
                     if normalized != (computed["algorithm"], computed["scope"], computed["value"]):
                         raise ValueError("payload text and identity hash disagree")
+                else:
+                    raw_b64 = item.get("raw_bytes_base64")
+                    if raw_b64 is None:
+                        raise ValueError(
+                            "payload text with non-text hash identity requires raw_bytes_base64"
+                        )
+                    if normalized[0] != "sha256":
+                        raise ValueError("raw byte verification supports sha256 only")
+                    try:
+                        raw = base64.b64decode(raw_b64, validate=True)
+                    except (ValueError, binascii.Error) as exc:
+                        raise ValueError("raw_bytes_base64 is invalid") from exc
+                    if hashlib.sha256(raw).hexdigest() != normalized[2]:
+                        raise ValueError("raw bytes and payload identity hash disagree")
                 values.append({"algorithm": normalized[0], "scope": normalized[1], "value": normalized[2]})
         elif identity is not None:
             normalized = _validate_identity(identity)
@@ -109,6 +125,28 @@ def payload_identities(record):
             expected = text_identity(primary_text)["value"]
             if str(primary_hash).lower() != expected:
                 raise ValueError("payload_sha256 does not match payload UTF-8 bytes")
+        elif primary_text not in (None, "") and scope != "decoded_text_utf8":
+            # A nested identity may already have been checked against raw bytes.
+            if any(
+                value["algorithm"] == algorithm
+                and value["scope"] == scope
+                and value["value"] == str(primary_hash).lower()
+                for value in values
+            ):
+                pass
+            elif not record.get("payload_raw_bytes_base64"):
+                raise ValueError(
+                    "payload text with non-text top-level hash requires payload_raw_bytes_base64"
+                )
+            else:
+                if algorithm != "sha256":
+                    raise ValueError("raw byte verification supports sha256 only")
+                try:
+                    data = base64.b64decode(record["payload_raw_bytes_base64"], validate=True)
+                except (ValueError, binascii.Error) as exc:
+                    raise ValueError("payload_raw_bytes_base64 is invalid") from exc
+                if hashlib.sha256(data).hexdigest() != str(primary_hash).lower():
+                    raise ValueError("top-level raw payload identity hash disagrees")
         elif any(identity["value"] == str(primary_hash).lower() for identity in values):
             pass
         else:
@@ -235,6 +273,18 @@ def validate(manifest, attempts, registry=None, inventory=None, inventory_after=
         image_map[image_id] = item
 
     strategy_order = manifest.get("strategy_order", [])
+    # A pair identity belongs to exactly one normalized key in exactly one group.
+    pair_owners = {}
+    for index, item in enumerate(images_list, 1):
+        pair_id = item.get("pair_id")
+        if not pair_id:
+            continue
+        owner = (item.get("group_id"), item.get("pair_key"))
+        if pair_id in pair_owners and pair_owners[pair_id] != owner:
+            errors.append(
+                f"manifest.images[{index}] pair_id collides across group or pair_key"
+            )
+        pair_owners[pair_id] = owner
     decoder_items = manifest.get("decoders", [])
     decoder_ids = [
         x if isinstance(x, str) else x.get("decoder_id")
@@ -387,6 +437,20 @@ def validate(manifest, attempts, registry=None, inventory=None, inventory_after=
             errors.append(f"{prefix} skipped status requires skip_reason")
         if status == "ERROR" and not attempt.get("error"):
             errors.append(f"{prefix} ERROR status requires error")
+        if status != "ERROR" and attempt.get("error"):
+            errors.append(f"{prefix} {status} must not contain error")
+        if status not in SKIP_STATUSES and attempt.get("skip_reason"):
+            errors.append(f"{prefix} {status} must not contain skip_reason")
+        if status != "DECODED" and (
+            attempt.get("payload") not in (None, "")
+            or attempt.get("payload_sha256")
+            or bool(attempt.get("payloads"))
+        ):
+            errors.append(f"{prefix} {status} must not contain decoded payloads")
+        if status == "DETECTED_ONLY" and attempt.get("candidate_count") is not None:
+            candidate_count = attempt.get("candidate_count")
+            if type(candidate_count) is not int or candidate_count <= 0:
+                errors.append(f"{prefix} DETECTED_ONLY requires candidate_count > 0")
         try:
             duration = float(attempt.get("duration_ms"))
             if not math.isfinite(duration) or duration < 0:
@@ -425,6 +489,11 @@ def validate(manifest, attempts, registry=None, inventory=None, inventory_after=
     for cell, indexes in attempt_indexes.items():
         if indexes and indexes != set(range(1, max(indexes) + 1)):
             errors.append(f"logical combination {cell} has non-contiguous retry indexes")
+        statuses = {row.get("status") for row in cells[cell]}
+        if "SKIPPED_INELIGIBLE" in statuses and len(statuses) > 1:
+            errors.append(f"logical combination {cell} mixes ineligible and other statuses")
+        if "NOT_RUN" in statuses and len(statuses) > 1:
+            errors.append(f"logical combination {cell} mixes NOT_RUN and other statuses")
 
     expected = {
         (image_id, strategy_id, decoder_id)

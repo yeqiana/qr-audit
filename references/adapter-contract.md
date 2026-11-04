@@ -78,3 +78,13 @@ Normal `scan` mode may stop after a successful strategy and records later attemp
 QR Audit records the adapter module's local source path and SHA-256 along with its own scanner files and registry. The validator checks those files still match. If the adapter delegates to external native libraries, record their exact versions and build identities in decoder metadata/options and the run's dependency evidence.
 
 A keyword search hit is only `HINT_ONLY`. A registered function is `EXECUTOR_REGISTERED`; source confirmation and runtime confirmation remain separate audit states.
+
+## Alternative: existing native executable over local CLI
+
+Use `scripts/external_cli_adapter.py` when the scanner is an existing C++/Java executable rather than Python-callable transforms. This is an **opt-in bridge, not an implementation of the 28 algorithms**.
+
+Set `QR_AUDIT_BRIDGE_CONFIG` to an absolute JSON file following `examples/native-cli-bridge/bridge-config.example.json`. The executable must receive literal argv (never a shell command) and return a single JSON object on stdout with mandatory fields `run_id`, `image_id`, `input_sha256`, `strategy_id`, `native_strategy`, `decoder_id`, `status`, `payloads`, `candidate_count`. Native statuses may include `DECODED`, `NO_DECODE`, `DETECTED_ONLY`, `NOT_RUN`, `SKIPPED_INELIGIBLE`, `ERROR`; errors/skips require reasons.
+
+Each source-file strategy bypasses pixel decoding in Python, so a fully connected native bridge does not require OpenCV or NumPy. All native implementation mappings must be source-confirmed; a process that only echoes requested IDs without executing the corresponding preprocessing does not constitute credible evidence. The executable, bridge config and declared source files are fingerprinted.
+
+See [onboarding and acceptance procedure](../docs/real-scanner-onboarding.md).

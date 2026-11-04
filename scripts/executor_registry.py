@@ -11,6 +11,7 @@ class StrategyExecutor:
     parameters: dict = field(default_factory=dict)
     applicability: object = None
     applicability_description: str = "ALWAYS"
+    input_mode: str = "pixels"
 
 
 @dataclass
@@ -28,9 +29,11 @@ class StrategyExecutorRegistry:
         self._items = {}
 
     def register(self, strategy_id, transform, version="1", parameters=None, applicability=None,
-                 applicability_description=None, replace=False):
+                 applicability_description=None, input_mode="pixels", replace=False):
         if not callable(transform):
             raise TypeError("strategy transform must be callable")
+        if input_mode not in ("pixels", "source_file"):
+            raise ValueError("strategy input_mode must be pixels or source_file")
         if strategy_id in self._items and not replace:
             raise ValueError(f"strategy executor already registered: {strategy_id}")
         self._items[strategy_id] = StrategyExecutor(
@@ -38,6 +41,7 @@ class StrategyExecutorRegistry:
             str(applicability_description or (
                 getattr(applicability, "__qualname__", "CUSTOM_CONDITION") if applicability else "ALWAYS"
             )),
+            input_mode,
         )
 
     def get(self, strategy_id):
