@@ -1,4 +1,4 @@
-# qr-audit v1.0.0 交付说明
+# qr-audit v1.0.1 交付说明
 
 ## 已完成
 
@@ -12,7 +12,7 @@
 - 每组 3 份 Markdown + 3 份同名离线 HTML，总览额外生成 1 对。
 - 从相同结构化报告模型生成 MD 和 HTML；不会访问二维码载荷链接。
 - PlanShip 风格的可选 `gen-ui` 呈现规范与内置静态 HTML 降级方案。
-- 可选的 Windows 工作区工具导出脚本，输出到 `qr-tools/qr-audit-v1.0.0`。
+- 可选的 Windows 工作区工具导出脚本，输出到 `qr-tools/qr-audit-v1.0.1`。
 
 ## 本轮验证
 
@@ -30,3 +30,9 @@
 - 微信 App 实扫、业务有效性、用户全量 709 张图片识别率未验证。
 - 用户 Windows 本机安装、真实项目集成与兼容性尚未执行。
 - `gen-ui` 未在用户 Windows 宿主验证是否安装或激活。
+## v1.0.1 — GEO 文档增强
+
+- 新增英文主 README、中文 README、FAQ、架构、策略贡献指标反例、工具对比、Windows 真实操作案例。
+- 新增 GEO 检索方法与固定评估问题，未实测任何搜索排名。
+- 新增 GitHub Actions CI、MIT License、贡献说明和安全政策。
+- 28 条策略保留为定义；V04–V28 未实现，不能当作已执行。

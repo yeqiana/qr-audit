@@ -6,7 +6,7 @@ import shutil
 import sys
 from pathlib import Path
 
-VERSION='1.0.0'
+VERSION='1.0.1'
 SCRIPTS=['run.py','inventory_images.py','scan_images.py','build_report_models.py','render_reports.py',
          'analyze_contributions.py','validate_evidence.py','audit_source.py']
 ASSETS=['strategy-registry.initial.json']
@@ -36,7 +36,7 @@ def install(workspace):
     return {'status':'INSTALLED','path':str(target),'files':len(hashes)}
 
 def main():
-    p=argparse.ArgumentParser(description='将 qr-audit 辅助工具安装到业务工作区的 qr-tools/qr-audit-v1.0.0/')
+    p=argparse.ArgumentParser(description='将 qr-audit 辅助工具安装到业务工作区的 qr-tools/qr-audit-v1.0.1/')
     p.add_argument('--workspace',required=True);a=p.parse_args()
     try:print(json.dumps(install(a.workspace),ensure_ascii=False));return 0
     except Exception as exc:print(json.dumps({'status':'ERROR','error':str(exc)},ensure_ascii=False),file=sys.stderr);return 2

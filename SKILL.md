@@ -1,6 +1,6 @@
 ---
 name: qr-audit
-description: 对本地二维码图片目录执行离线批量扫描、扫描器源码审计、预处理策略贡献度实验与证据报告交付；生成每份 Markdown 对应的独立离线 HTML。适用于微信无法登录、需要用开源解码器复核二维码、审计多种预处理策略、比较策略增量召回和整类移除损失的场景。
+description: "QR Audit: offline QR code scanning, source-code auditing and preprocessing strategy contribution analysis for Codex and Claude Code. 二维码离线扫描、28 条初始策略注册表、策略归因、Markdown/HTML 报告；内置参考扫描只支持 V01–V03。"
 ---
 
 # QR Audit
@@ -188,7 +188,7 @@ description: 对本地二维码图片目录执行离线批量扫描、扫描器�
 ```text
 <workspace_root>/
   qr-tools/
-    qr-audit-v1.0.0/
+    qr-audit-v1.0.1/
   检测文件/
     <组A>/
       WAVES_QR/
