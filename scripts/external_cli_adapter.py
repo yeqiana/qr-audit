@@ -12,7 +12,7 @@ import subprocess
 from pathlib import Path
 
 CONFIG_ENV = "QR_AUDIT_BRIDGE_CONFIG"
-TOKEN_RE = re.compile(r"\{([a-z_]+)\}")
+TOKEN_RE = re.compile(r"\{([a-z0-9_]+)\}")
 ALLOWED_TOKENS = {
     "image_path", "image_id", "input_sha256", "run_id", "strategy_id",
     "native_strategy", "decoder_id", "native_decoder",

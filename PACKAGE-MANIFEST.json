@@ -164,8 +164,8 @@
     },
     {
       "path": "scripts/external_cli_adapter.py",
-      "sha256": "9c9b7573a23637b08c0fa7db5725e96cd683340b7bad2673279953e4f33b353e",
-      "size_bytes": 10178
+      "sha256": "b64015d4eaefd814dc721a014b60ef73c3c870ee621a5be987a5bf433aa97106",
+      "size_bytes": 10181
     },
     {
       "path": "scripts/install_tools.py",
