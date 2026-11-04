@@ -8,7 +8,7 @@ from pathlib import Path
 
 VERSION='1.2.0'
 SCRIPTS=['run.py','inventory_images.py','scan_images.py','executor_registry.py','evidence_contract.py',
-         'build_report_models.py','render_reports.py','analyze_contributions.py','validate_evidence.py','audit_source.py','external_cli_adapter.py'
+         'build_report_models.py','render_reports.py','analyze_contributions.py','validate_evidence.py','audit_source.py','external_cli_adapter.py']
 ASSETS=['strategy-registry.initial.json']
 
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()

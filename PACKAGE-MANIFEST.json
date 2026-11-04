@@ -169,8 +169,8 @@
     },
     {
       "path": "scripts/install_tools.py",
-      "sha256": "fecdfd47ddbb4c3ef5af63c0a50abde8a40ef116034eef86ba5f3ddb7af7c173",
-      "size_bytes": 2228
+      "sha256": "fc620ea61322bf7a3470528b39810d14625bb37d7bd886131f3de044d3557ae7",
+      "size_bytes": 2229
     },
     {
       "path": "scripts/inventory_images.py",
