@@ -109,7 +109,7 @@ def payload_identities(record):
             expected = text_identity(primary_text)["value"]
             if str(primary_hash).lower() != expected:
                 raise ValueError("payload_sha256 does not match payload UTF-8 bytes")
-        elif any(identity[2] == str(primary_hash).lower() for identity in values):
+        elif any(identity["value"] == str(primary_hash).lower() for identity in values):
             pass
         else:
             if not record.get("payload_hash_algorithm") or not record.get("payload_hash_scope"):
@@ -257,7 +257,11 @@ def validate(manifest, attempts, registry=None, inventory=None, inventory_after=
             manifest_map = {}
             for item in images_list:
                 key = (item.get("group_id"), item.get("side_id"), item.get("relative_path"))
+                if key in manifest_map:
+                    errors.append(f"manifest contains duplicate image identity: {key}")
                 manifest_map[key] = item
+            if len(manifest_map) != len(images_list):
+                errors.append("manifest image identity keys are not unique")
             if set(expected_map) != set(manifest_map):
                 errors.append("manifest image identity set differs from inventory")
                 inventory_verification = {"status": "NOT_VERIFIED", "errors": ["image identity set mismatch"]}
@@ -277,14 +281,17 @@ def validate(manifest, attempts, registry=None, inventory=None, inventory_after=
     if registry is not None:
         registry_ids = [x.get("strategy_id") for x in registry.get("strategies", [])]
         actual_hash = canonical_sha256(registry)
+        registry_errors = []
         if actual_hash != manifest.get("strategy_registry_sha256"):
-            registry_verification = {"status": "NOT_VERIFIED", "errors": ["strategy_registry_sha256 mismatch"]}
+            registry_errors.append("strategy_registry_sha256 mismatch")
             errors.append("strategy_registry_sha256 mismatch")
-        elif registry_ids != strategy_order:
-            registry_verification = {"status": "NOT_VERIFIED", "errors": ["strategy_order differs from frozen registry"]}
+        if registry_ids != strategy_order:
+            registry_errors.append("strategy_order differs from frozen registry")
             errors.append("strategy_order differs from frozen registry")
-        else:
-            registry_verification = {"status": "VERIFIED", "errors": []}
+        registry_verification = (
+            {"status": "NOT_VERIFIED", "errors": registry_errors}
+            if registry_errors else {"status": "VERIFIED", "errors": []}
+        )
     else:
         warnings.append("strategy registry not supplied; declared strategy scope is NOT_VERIFIED")
 
@@ -352,6 +359,8 @@ def validate(manifest, attempts, registry=None, inventory=None, inventory_after=
         for field in required:
             if field not in attempt or attempt.get(field) is None:
                 errors.append(f"{prefix} missing {field}")
+            elif isinstance(attempt.get(field), str) and not attempt[field].strip():
+                errors.append(f"{prefix} blank {field}")
 
         if attempt.get("run_id") != run_id:
             errors.append(f"{prefix} run_id does not match manifest.run_id")

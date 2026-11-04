@@ -144,8 +144,8 @@
     },
     {
       "path": "scripts/evidence_contract.py",
-      "sha256": "7d26e8fbb1d76c05ab1cc8e48eeb58c8ca00c5736d50482dda2b78b4fe6ca301",
-      "size_bytes": 23713
+      "sha256": "931aacf92f235bdf4afa97380e3e7bce087bff65ec2305540717e4ec6d8058b9",
+      "size_bytes": 24163
     },
     {
       "path": "scripts/executor_registry.py",
@@ -199,8 +199,8 @@
     },
     {
       "path": "tests/test_tools.py",
-      "sha256": "2e74f37a41223ee72956bfc54648aa48cec7e8e98c98a2e5edfdd3b1650c476a",
-      "size_bytes": 26533
+      "sha256": "822268355bf480b82d34439cb5d2ca0e0b566959112d17bcd76c2194386915cb",
+      "size_bytes": 26962
     }
   ]
 }

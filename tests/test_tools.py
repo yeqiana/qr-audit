@@ -169,6 +169,13 @@ class EvidenceContractTests(unittest.TestCase):
             self.assertIn("pair_id does not match", joined)
             self.assertFalse(result["contribution_metrics_valid"])
 
+    def test_rejects_blank_attempt_identity(self):
+        with tempfile.TemporaryDirectory() as temp:
+            inventory, inventory_after, registry, manifest, attempts = FixtureFactory.build(temp)
+            attempts[0]["attempt_id"] = "   "
+            result = evidence_contract.validate(manifest, attempts, registry, inventory, inventory_after)
+            self.assertIn("blank attempt_id", "\n".join(result["errors"]))
+
     def test_rejects_payload_hash_mismatch_and_duplicate_retry_index(self):
         with tempfile.TemporaryDirectory() as temp:
             inventory, inventory_after, registry, manifest, attempts = FixtureFactory.build(temp)
