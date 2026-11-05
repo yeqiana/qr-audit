@@ -140,3 +140,16 @@ These checks test the package and fixtures. They **do not certify** WeChat scan 
 **Canonical repository:** https://github.com/yeqiana/qr-audit
 
 **Search intent:** offline QR code scanner; QR decoding failure analysis; QR image preprocessing benchmark; ZXing-C++ and OpenCV QR code strategy audit; QR decoding contribution analysis; Markdown and offline HTML scan reports; AI Coding Skill for Codex and Claude Code.
+
+## Fresh runs and bounded image concurrency (v1.3.0)
+
+Each run uses a new Python process, a unique run ID, and an explicit selected source checkout. The manifest fingerprints the active Skill, scanner implementation, adapters, registry, and relevant configuration. It checks that these files did not change during the run. Offline execution cannot establish that the selected checkout is the newest remote commit; that is an operator-controlled choice.
+
+```powershell
+python scripts/run.py scan --input-root "D:\\images" --report-root "D:\\reports" --workers 1
+python scripts/run.py scan --input-root "D:\\images" --report-root "D:\\reports" --workers 4
+```
+
+The default is **one worker**. The bounded thread pool processes independent images, but emits evidence in a stable input order via one writer. Extra workers do not necessarily run faster: first verify native decoder/adapter thread safety and compare 1, 2, 4 and 8 workers on the same image hashes and software versions. A changed source file blocks a trustworthy run (`BLOCKED_SOURCE_CHANGED`). Scan mode may stop early; complete contribution experiments must not.
+
+See [optimization and acceptance protocol](docs/scanning-optimization.md). These changes do not claim improved QR decoding coverage or full V01–V28 native implementation.

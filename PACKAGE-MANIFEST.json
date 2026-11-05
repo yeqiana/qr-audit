@@ -1,6 +1,6 @@
 {
   "name": "qr-audit",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -99,12 +99,12 @@
     },
     {
       "path": "README.md",
-      "sha256": "6831c3107de4d9f032bdb511286a80a200d17ba516a438389061dc5ae7fc9d95",
-      "size_bytes": 11552
+      "sha256": "6050972b91170ed3aabfb27d8c82c1569353cd85a9c2326ed361fc37413f2a68",
+      "size_bytes": 12852
     },
     {
       "path": "README.zh-CN.md",
-      "sha256": "10f1607cbbd93ea22bf708b0f1209c58ef70ec379f1e7ab2eaf8757fe538c8ee",
+      "sha256": "16c97b6f34faaca882f3ddb1be4f7598c026e05dde73839f3415f90cbdbe8019",
       "size_bytes": 8957
     },
     {
@@ -144,8 +144,8 @@
     },
     {
       "path": "RELEASE-NOTES.md",
-      "sha256": "f12102fdab1a0416aedd9f13510d2a09cc82b262ce1a0ac565696d2ae49b0e88",
-      "size_bytes": 3787
+      "sha256": "c6a5dc1e782f581913f3227366fa7ffd1c8a13f4bd3a0060abd97a45cdc4ba3c",
+      "size_bytes": 5431
     },
     {
       "path": "scripts/analyze_contributions.py",
@@ -179,7 +179,7 @@
     },
     {
       "path": "scripts/install_tools.py",
-      "sha256": "fc620ea61322bf7a3470528b39810d14625bb37d7bd886131f3de044d3557ae7",
+      "sha256": "c856b76eaee92e79d0e265b79685c896ed61a6240cfba7e81165ea834d513fb8",
       "size_bytes": 2229
     },
     {
@@ -219,7 +219,7 @@
     },
     {
       "path": "SKILL.md",
-      "sha256": "b2d47c9cbc5c21dafdf3b76fc3a6db672baca8b81ed8788e0abbe9b60f1ebe4c",
+      "sha256": "2d314606ecafb79c9bb0d15b0c9a067dec123e4a51c0238bd1c62f306f39b399",
       "size_bytes": 21748
     },
     {

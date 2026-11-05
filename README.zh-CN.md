@@ -1,7 +1,7 @@
 # QR Audit — 离线二维码扫描与策略审计 Skill
 
 **Skill 名称：** `qr-audit`  
-**版本：** `1.2.0`
+**版本：** `1.3.0`
 **用途：** 二维码离线批量扫描、扫描器源码审计、策略贡献度实验，以及 Markdown + 静态离线 HTML 报告交付。
 
 ## 能做什么
@@ -106,7 +106,7 @@ python "$skill\scripts\run.py" scan --input-root "$input" --report-root "$report
 # 只读源码审计候选（不能以关键词命中代替人工核对）
 python "$skill\scripts\run.py" audit --source-root (Join-Path $project 'qr-tools') --output (Join-Path $reports 'audit-hints.json')
 
-# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.2.0
+# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.3.0
 python "$skill\scripts\install_tools.py" --workspace "$project"
 ```
 
