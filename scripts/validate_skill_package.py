@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 
@@ -42,6 +43,28 @@ def check():
         errors.append("SKILL 名称不是 qr-audit")
     if any("qr-offline-scan-audit" in path.read_text(encoding="utf-8") for path in ROOT.rglob("*.md")):
         errors.append("残留旧 Skill 名称")
+    manifest = json.loads((ROOT / "PACKAGE-MANIFEST.json").read_text(encoding="utf-8"))
+    if manifest.get("version") != "1.5.0":
+        errors.append("发布清单版本与当前 Skill 版本不匹配")
+    listed = set()
+    for entry in manifest.get("files", []):
+        name = entry.get("path")
+        if not isinstance(name, str) or not name or name in listed or (
+            Path(name).is_absolute() or ".." in Path(name).parts
+        ):
+            errors.append("发布清单中的路径无效或重复: " + str(name))
+            continue
+        listed.add(name)
+        path = ROOT / name
+        if not path.is_file():
+            errors.append("发布文件不存在: " + name)
+            continue
+        body = path.read_bytes()
+        if hashlib.sha256(body).hexdigest() != entry.get("sha256") or len(body) != entry.get("size_bytes"):
+            errors.append("发布文件指纹或长度不匹配: " + name)
+    for name in REQUIRED:
+        if name not in listed:
+            errors.append("必需文件未列入发布清单: " + name)
     return {"status": "PASS" if not errors else "FAIL", "errors": errors, "strategy_count": len(ids)}
 
 

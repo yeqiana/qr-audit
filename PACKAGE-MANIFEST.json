@@ -254,8 +254,8 @@
     },
     {
       "path": "scripts/validate_skill_package.py",
-      "sha256": "3e78fe9dc9804b668bdbff4108b5f5e18ad733109edd8e27096faf848e4749cc",
-      "size_bytes": 2539
+      "sha256": "9ee038f40cbe9db4910e1daf63f9e002e07b6e716212183336fa3dc7a6b7a9b5",
+      "size_bytes": 3617
     },
     {
       "path": "scripts/wechat_decoder_adapter.py",
