@@ -134,3 +134,17 @@ python scripts/run.py scan --experiment-mode contribution --input-root 'D:\\imag
 ## Gen UI 可选集成
 
 与 [PlanShip](https://github.com/yeqiana/plan-ship) 一样，把 [gen-ui](https://github.com/yeqiana/gen-ui) 视为**可选的呈现规范**，不是 HTML 运行引擎或扫描依赖。若当前 Codex/Claude 会话已加载 `gen-ui`，按实际协议优化展示；缺失时使用本 Skill 内置离线 HTML 生成器，不阻断扫描，也不在未经授权时自动克隆其他 Skill。
+
+## 隔离运行、可追溯与受控并发
+
+- 使用明确的本次 `qr-audit/scripts/run.py` 入口，新的 Python 进程和新的 run_id；不要调用历史临时脚本或复制旧结果。
+- 默认 `--workers 1`；可使用 `--workers 2`、`--workers 4` 或 `--workers 8` 进行**同输入**性能对比。当前是图片级有界线程池，不能保证每台机器都加速；本地原生适配器必须先验证线程安全。
+- 在 `run-manifest.json` 查看 `execution`、`source_fingerprint`、`source_consistency`，源码在扫描期间被更改会标记 `BLOCKED_SOURCE_CHANGED`。
+- `scan` 是快速覆盖，`--experiment-mode contribution` 才是无早停完整贡献度验证；两者不可混用。
+
+```powershell
+python scripts/run.py scan --input-root "D:\\images" --report-root "D:\\reports" --workers 1
+python scripts/run.py scan --input-root "D:\\images" --report-root "D:\\reports" --workers 4
+```
+
+不要以“算法数更多、worker 更多、报告更长”为优化目标。参见 `docs/scanning-optimization.md`。

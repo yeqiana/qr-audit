@@ -35,6 +35,8 @@ def main():
         command.add_argument("--left-name", default="WAVES_QR")
         command.add_argument("--right-name", default="WAVES_QR_RAW")
         command.add_argument("--max-pixels", type=int, default=50000000)
+        command.add_argument("--workers", type=int, default=1,
+                             help="1-8 image threads; benchmark before raising the default")
         command.add_argument("--source-root", help="all 模式只读检索源码候选位置")
 
     audit = sub.add_parser("audit", help="源码候选审计（关键词命中不是实现确认）")
@@ -116,7 +118,7 @@ def main():
         run_result = scan_images.run_scan(
             args.input_root, args.report_root, args.workspace_root, args.decoder,
             args.max_pixels, args.left_name, args.right_name,
-            args.experiment_mode, args.adapter_module,
+            args.experiment_mode, args.adapter_module, workers=args.workers,
         )
         evidence = Path(run_result["evidence"])
         manifest = _load_json(evidence / "run-manifest.json")
@@ -159,7 +161,10 @@ def main():
             )
             contribution_output = str(contribution_dir)
 
-        if run_result["status"] == "BLOCKED_INPUT_CHANGED":
+        if run_result["status"] == "BLOCKED_SOURCE_CHANGED":
+            status = "BLOCKED_SOURCE_CHANGED"
+            exit_code = 3
+        elif run_result["status"] == "BLOCKED_INPUT_CHANGED":
             status = "BLOCKED_INPUT_CHANGED"
             exit_code = 3
         elif args.experiment_mode == "contribution" and not check["contribution_metrics_valid"]:
@@ -178,6 +183,8 @@ def main():
             "image_count": run_result["image_count"],
             "decoded_images": run_result["decoded_images"],
             "input_consistency": run_result["input_consistency"],
+            "source_consistency": run_result["source_consistency"],
+            "workers": run_result["workers"],
             "validation": check, "contribution_output": contribution_output,
             "note": (
                 "常规扫描允许提前停止；只有 contribution 模式且全部策略执行器、输入、注册表和源码指纹均核验通过，"

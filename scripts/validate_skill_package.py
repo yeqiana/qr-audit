@@ -13,6 +13,7 @@ REQUIRED = [
     "tests/test_external_cli_adapter.py", "tests/test_runtime_source_file.py",
     "tests/test_evidence_hardening.py", "docs/real-scanner-onboarding.md",
     "tests/test_contribution_certification.py", "docs/local-runner-p0-acceptance.md",
+    "tests/test_scan_fresh_workers.py", "docs/scanning-optimization.md",
 ]
 
 

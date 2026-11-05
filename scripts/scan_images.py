@@ -1,5 +1,7 @@
 """Offline scanner with explicit executor registration and before/after input snapshots."""
 import argparse
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import importlib
 import json
@@ -57,6 +59,8 @@ def load_image(path, cv2, np):
 def source_fingerprint(workspace_root, registry_path, adapter_modules, extra_sources=None):
     candidates = [
         Path(__file__).resolve(),
+        Path(__file__).resolve().parents[1] / "SKILL.md",
+        Path(__file__).resolve().parents[1] / "PACKAGE-MANIFEST.json",
         Path(__file__).with_name("inventory_images.py").resolve(),
         Path(__file__).with_name("executor_registry.py").resolve(),
         Path(__file__).with_name("evidence_contract.py").resolve(),
@@ -85,6 +89,55 @@ def source_fingerprint(workspace_root, registry_path, adapter_modules, extra_sou
         "fingerprint_scope": "qr-audit-scanner-and-loaded-adapters",
         "files": unique,
     }
+
+
+
+def verify_source_snapshot(source):
+    """Re-hash the exact source/config files pinned before scanning.
+
+    An imported module may already be in memory: a changed disk file cannot
+    silently produce a certified, reproducible run.
+    """
+    changed, missing = [], []
+    checked = 0
+    for item in source.get("files", []):
+        path = item["path"]
+        try:
+            current = file_sha256(path)
+        except OSError:
+            missing.append(path)
+            continue
+        checked += 1
+        if current != item["sha256"]:
+            changed.append(path)
+    return {
+        "status": "STABLE" if not changed and not missing and checked else "CHANGED",
+        "checked": checked,
+        "changed_paths": changed,
+        "missing_paths": missing,
+    }
+
+
+def ordered_image_map(fn, items, workers):
+    """Bound pending futures and emit results in frozen inventory order."""
+    if workers == 1:
+        for item in items:
+            yield fn(item)
+        return
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        source = iter(items)
+        pending = deque()
+        for _ in range(workers * 2):
+            try:
+                pending.append(pool.submit(fn, next(source)))
+            except StopIteration:
+                break
+        while pending:
+            yield pending.popleft().result()
+            try:
+                pending.append(pool.submit(fn, next(source)))
+            except StopIteration:
+                pass
 
 
 def inventory_snapshot(inventory):
@@ -404,7 +457,7 @@ def execute_image_matrix(run_id, image_meta, strategy_order, strategy_executors,
 
 def run_scan(input_root, report_root, workspace_root=None, decoders=None,
              max_pixels=50000000, left_name="WAVES_QR", right_name="WAVES_QR_RAW",
-             mode="scan", adapter_modules=None):
+             mode="scan", adapter_modules=None, workers=1):
     input_root = Path(input_root).expanduser().resolve()
     report_root = Path(report_root).expanduser().resolve()
     workspace_root = Path(workspace_root).expanduser().resolve() if workspace_root else input_root.parent
@@ -412,6 +465,8 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
         raise ValueError("input_root 不存在")
     if mode not in ("scan", "contribution"):
         raise ValueError("mode must be scan or contribution")
+    if not isinstance(workers, int) or isinstance(workers, bool) or not 1 <= workers <= 8:
+        raise ValueError("workers must be an integer between 1 and 8")
 
     # External source-file adapters need no image-decoding dependencies.
     try:
@@ -479,16 +534,29 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
             "name": "zxing-cpp", "version": str(getattr(zxing, "__version__", "VERSION_NOT_EXPOSED")),
         })
 
+    # Record the pinned code scope before the first image is processed.
+    # A partial/failed run retains its initial manifest for diagnosis.
+    manifest["execution"] = {
+        "workers": workers, "backend": "threads", "ordered_output": True,
+        "pending_limit": workers * 2 if workers > 1 else 1,
+    }
+    manifest["run_status"] = "RUNNING"
+    manifest_path = evidence / "run-manifest.json"
+    with manifest_path.open("x", encoding="utf-8") as output:
+        json.dump(manifest, output, ensure_ascii=False, indent=2)
+
+    def process_image(image_meta):
+        return execute_image_matrix(
+            run_id, image_meta, manifest["strategy_order"],
+            strategy_executors, decoder_executors, requested_decoders,
+            mode, lambda item: load_image(item["path"], cv2, np),
+            context, max_pixels,
+        )
+
     total, decoded_images = 0, 0
     attempts_path = evidence / "attempts.jsonl"
     with attempts_path.open("x", encoding="utf-8") as output:
-        for image_meta in manifest["images"]:
-            records, image_success = execute_image_matrix(
-                run_id, image_meta, manifest["strategy_order"],
-                strategy_executors, decoder_executors, requested_decoders,
-                mode, lambda item: load_image(item["path"], cv2, np),
-                context, max_pixels,
-            )
+        for records, image_success in ordered_image_map(process_image, manifest["images"], workers):
             for record in records:
                 output.write(json.dumps(record, ensure_ascii=False) + "\n")
             total += len(records)
@@ -504,16 +572,23 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
     manifest["input_inventory_after_sha256"] = canonical_sha256({
         k: v for k, v in inventory_after.items() if k != "generated_at"
     })
+    manifest["source_consistency"] = verify_source_snapshot(manifest["source_fingerprint"])
     manifest["finished_at"] = utc_now()
     manifest["attempt_count"] = total
-    manifest_path = evidence / "run-manifest.json"
+    manifest["run_status"] = "COMPLETE"
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
-    status = "PASS_BASELINE_ONLY" if manifest["input_consistency"]["status"] == "STABLE" else "BLOCKED_INPUT_CHANGED"
+    if manifest["source_consistency"]["status"] != "STABLE":
+        status = "BLOCKED_SOURCE_CHANGED"
+    elif manifest["input_consistency"]["status"] != "STABLE":
+        status = "BLOCKED_INPUT_CHANGED"
+    else:
+        status = "PASS_BASELINE_ONLY"
     return {
         "status": status, "run_root": str(run_root), "evidence": str(evidence),
         "image_count": len(manifest["images"]), "decoded_images": decoded_images,
-        "attempts": total, "run_id": run_id,
+        "attempts": total, "run_id": run_id, "workers": workers,
         "input_consistency": manifest["input_consistency"],
+        "source_consistency": manifest["source_consistency"],
     }
 
 
@@ -526,6 +601,8 @@ def main():
     parser.add_argument("--adapter-module", action="append", default=[],
                         help="可导入模块名；模块必须提供 register_qr_audit(strategies, decoders, context)")
     parser.add_argument("--mode", choices=["scan", "contribution"], default="scan")
+    parser.add_argument("--workers", type=int, default=1,
+                        help="1-8 independent image threads; default 1 for safest compatibility")
     parser.add_argument("--max-pixels", type=int, default=50000000)
     parser.add_argument("--left-name", default="WAVES_QR")
     parser.add_argument("--right-name", default="WAVES_QR_RAW")
@@ -534,6 +611,7 @@ def main():
         result = run_scan(
             args.input_root, args.report_root, args.workspace_root, args.decoder,
             args.max_pixels, args.left_name, args.right_name, args.mode, args.adapter_module,
+            workers=args.workers,
         )
         print(json.dumps(result, ensure_ascii=False))
         return 0 if result["status"] == "PASS_BASELINE_ONLY" else 3
