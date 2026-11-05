@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "registry_id": "qr-audit.boost-reference-v2",
-  "description": "Independent opt-in OpenCV reference experiments B01-B08; original V01-V28 untouched.",
+  "registry_id": "qr-audit.boost-reference-v3",
+  "description": "Independent opt-in B01-B09 recognition experiments with bounded adaptive scale and ROI perspective rectification; original V01-V28 untouched.",
   "policy": {
     "automatic_deletion_allowed": false,
     "not_native_v_strategy": true,
@@ -38,13 +38,14 @@
       ],
       "parameters": {
         "operation": "quiet_zone",
-        "scale": 4,
         "white_border_pixels": 16,
-        "max_output_pixels": 8000000
+        "max_output_pixels": 8000000,
+        "preferred_scale": 4,
+        "adaptive_scale": true
       },
       "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
       "runtime_confirmed": false,
-      "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy."
+      "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy. Runtime scale automatically selects 4/3/2/1 or bounded area downsampling; previous fixed 4x is no longer guaranteed."
     },
     {
       "strategy_id": "B03",
@@ -57,13 +58,14 @@
       ],
       "parameters": {
         "operation": "otsu",
-        "scale": 4,
         "white_border_pixels": 16,
-        "max_output_pixels": 8000000
+        "max_output_pixels": 8000000,
+        "preferred_scale": 4,
+        "adaptive_scale": true
       },
       "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
       "runtime_confirmed": false,
-      "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy."
+      "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy. Runtime scale automatically selects 4/3/2/1 or bounded area downsampling; previous fixed 4x is no longer guaranteed."
     },
     {
       "strategy_id": "B04",
@@ -76,13 +78,14 @@
       ],
       "parameters": {
         "operation": "clahe_otsu",
-        "scale": 4,
         "white_border_pixels": 16,
-        "max_output_pixels": 8000000
+        "max_output_pixels": 8000000,
+        "preferred_scale": 4,
+        "adaptive_scale": true
       },
       "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
       "runtime_confirmed": false,
-      "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy."
+      "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy. Runtime scale automatically selects 4/3/2/1 or bounded area downsampling; previous fixed 4x is no longer guaranteed."
     },
     {
       "strategy_id": "B05",
@@ -95,13 +98,14 @@
       ],
       "parameters": {
         "operation": "adaptive",
-        "scale": 4,
         "white_border_pixels": 16,
-        "max_output_pixels": 8000000
+        "max_output_pixels": 8000000,
+        "preferred_scale": 4,
+        "adaptive_scale": true
       },
       "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
       "runtime_confirmed": false,
-      "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy."
+      "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy. Runtime scale automatically selects 4/3/2/1 or bounded area downsampling; previous fixed 4x is no longer guaranteed."
     },
     {
       "strategy_id": "B06",
@@ -114,13 +118,14 @@
       ],
       "parameters": {
         "operation": "gamma",
-        "scale": 4,
         "white_border_pixels": 16,
-        "max_output_pixels": 8000000
+        "max_output_pixels": 8000000,
+        "preferred_scale": 4,
+        "adaptive_scale": true
       },
       "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
       "runtime_confirmed": false,
-      "notes": "Independent opt-in Bxx reference experiment; not a native V strategy or guaranteed improvement."
+      "notes": "Independent opt-in Bxx reference experiment; not a native V strategy or guaranteed improvement. Runtime scale automatically selects 4/3/2/1 or bounded area downsampling; previous fixed 4x is no longer guaranteed."
     },
     {
       "strategy_id": "B07",
@@ -133,13 +138,14 @@
       ],
       "parameters": {
         "operation": "sauvola",
-        "scale": 4,
         "white_border_pixels": 16,
-        "max_output_pixels": 8000000
+        "max_output_pixels": 8000000,
+        "preferred_scale": 4,
+        "adaptive_scale": true
       },
       "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
       "runtime_confirmed": false,
-      "notes": "Independent opt-in Bxx reference experiment; not a native V strategy or guaranteed improvement."
+      "notes": "Independent opt-in Bxx reference experiment; not a native V strategy or guaranteed improvement. Runtime scale automatically selects 4/3/2/1 or bounded area downsampling; previous fixed 4x is no longer guaranteed."
     },
     {
       "strategy_id": "B08",
@@ -152,13 +158,34 @@
       ],
       "parameters": {
         "operation": "flatfield",
-        "scale": 4,
         "white_border_pixels": 16,
+        "max_output_pixels": 8000000,
+        "preferred_scale": 4,
+        "adaptive_scale": true
+      },
+      "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
+      "runtime_confirmed": false,
+      "notes": "Independent opt-in Bxx reference experiment; not a native V strategy or guaranteed improvement. Runtime scale automatically selects 4/3/2/1 or bounded area downsampling; previous fixed 4x is no longer guaranteed."
+    },
+    {
+      "strategy_id": "B09",
+      "order": 9,
+      "name_zh": "检测候选框透视矫正+补静区",
+      "family": "geometry",
+      "tags": [
+        "EXPERIMENTAL",
+        "REFERENCE_OPENCV"
+      ],
+      "parameters": {
+        "operation": "rectify_roi",
+        "preferred_scale": 1,
+        "adaptive_scale": true,
+        "white_border_pixels": "max(16, ROI宽度/6)",
         "max_output_pixels": 8000000
       },
       "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
       "runtime_confirmed": false,
-      "notes": "Independent opt-in Bxx reference experiment; not a native V strategy or guaranteed improvement."
+      "notes": "Use OpenCV detected QR quadrilateral and warp largest candidate to square with a post-warp quiet zone; fallback to bounded full frame if not detected. Does not verify payload and is not native V strategy."
     }
   ]
 }

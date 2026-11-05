@@ -317,3 +317,10 @@ python "$skill\scripts\run.py" contribution --manifest "<manifest.json>" --attem
 - `run_scan` 的输出将追加 `evidence/strategy-registry.effective.json`（本次合成注册表，不修改原注册表）、`evidence/fallback-summary.json`（本次观察到的新增文件/配对及贡献策略，未认证载荷真值）。旧成功必须经 `--baseline-evidence` 同输入按图像及载荷集合做零回退验收。
 - 新增标准 OpenCV/ZXing 解码器只执行 B 策略；本地原生 source_file 解码器仅执行原注册表；WeChat 仅执行最后的 W01，必须预先具备本地模型与支持的 OpenCV，缺模型直接阻断，不静默跳过。初次建议 `workers=1`。
 - 带原有真实 adapter / registry 调用方式见 `docs/failure-fallback-usage.md`；不要单独用默认 V01–V03 参考扫描替换之前原生/本地 R scanner；旧 V04/V10 接线完整性仍要独立验收。
+
+## v1.5.2：大图防失效、区域透视恢复与微信增强组合
+
+- **大图**：B02–B08 自动选择最高符合 8M 输出预算的 4/3/2/1 缩放倍数，连 1 倍都不满足则使用 INTER_AREA 按比例收缩；不可把这些自适应处理称为与旧版固定 4 倍算法完全等价。先通过真实旧执行器获取旧成功载荷。
+- **B09**：使用 OpenCV detectMulti/detect 查找二维码四角，选择面积最大的有效定位框，做单码透视校正并在变换后补白边，最多约 8M 像素。无有效候选时有界全图兜底；不具备任意多个二维码候选的全部解析能力。
+- **微信离线模型**：`--boost-fallback --wechat-fallback` 可在 B02/B04/B06/B08/B09 上尝试 WeChatQRCode，并保留 W01 最后原图尝试；不支持无本地模型运行。手机微信 App 人工扫码效果不等同这个模块。
+- **证据**：`evidence/fallback-summary.json` 增加 rescue_by_decoder、rescue_by_strategy_decoder 观测指标。不可据此声称载荷正确，必须配合历史同输入零回退与人工真值。默认不开启增强，V/R 原注册表和顺序不变。参见 `docs/recognition-recovery-v152.md`。

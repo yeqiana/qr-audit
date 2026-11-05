@@ -50,7 +50,11 @@ def decoder_filters(base_strategy_ids, boost_strategy_ids, original_decoder_ids,
     allowed = {}
     for did in effective_decoder_ids:
         if did == "wechat" and with_wechat:
-            allowed[did] = {"W01"}
+            # Use the independent detector on a small, deliberately selected
+            # set of enhanced pixels as well as its last-resort raw W01.
+            # If WeChat was already a baseline decoder, retain old calls.
+            enhanced = {"B02", "B04", "B06", "B08", "B09"} & boost
+            allowed[did] = enhanced | {"W01"} | (base if did in old else set())
         elif did in ("opencv", "zxingcpp"):
             # Original decoders retain all baseline calls; injected ones only
             # participate in the opt-in experimental B strategies.
@@ -73,6 +77,8 @@ def summarize(attempts, manifest):
     base_success = set()
     fallback_success = set()
     strategy_rescues = defaultdict(set)
+    decoder_rescues = defaultdict(set)
+    strategy_decoder_rescues = defaultdict(set)
     for row in attempts:
         if row.get("status") != "DECODED":
             continue
@@ -83,6 +89,9 @@ def summarize(attempts, manifest):
         elif sid in extras:
             fallback_success.add(image_id)
             strategy_rescues[sid].add(image_id)
+            decoder_id = row.get("decoder_id", "UNKNOWN")
+            decoder_rescues[decoder_id].add(image_id)
+            strategy_decoder_rescues[(sid, decoder_id)].add(image_id)
     newly_rescued = fallback_success - base_success
     pair_members = defaultdict(set)
     for row in manifest["images"]:
@@ -103,6 +112,11 @@ def summarize(attempts, manifest):
         "final_success_images": len(union_success),
         "final_success_pairs": len(union_pairs),
         "rescue_by_strategy": {s: len(ids - base_success) for s, ids in sorted(strategy_rescues.items())},
+        "rescue_by_decoder": {d: len(ids - base_success) for d, ids in sorted(decoder_rescues.items())},
+        "rescue_by_strategy_decoder": {
+            f"{sid}/{decoder}": len(ids - base_success)
+            for (sid, decoder), ids in sorted(strategy_decoder_rescues.items())
+        },
         "warning": ("Counts denote offline DECODED coverage, not validated correctness. "
                     "Independent truth and historical zero-regression gate are required."),
     }
