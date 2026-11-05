@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from evidence_contract import canonical_sha256, file_sha256
+from regression_gate import compare_directories
 from executor_registry import (
     StrategyExecutorRegistry, DecoderExecutorRegistry,
     register_builtin_strategies, register_builtin_decoders, load_adapter_modules,
@@ -459,7 +460,8 @@ def execute_image_matrix(run_id, image_meta, strategy_order, strategy_executors,
 def run_scan(input_root, report_root, workspace_root=None, decoders=None,
              max_pixels=50000000, left_name="WAVES_QR", right_name="WAVES_QR_RAW",
              mode="scan", adapter_modules=None, workers=1, registry_path=None,
-             required_strategies=None):
+             required_strategies=None, baseline_evidence=None,
+             require_upgrade_gate=False):
     input_root = Path(input_root).expanduser().resolve()
     report_root = Path(report_root).expanduser().resolve()
     workspace_root = Path(workspace_root).expanduser().resolve() if workspace_root else input_root.parent
@@ -469,6 +471,17 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
         raise ValueError("mode must be scan or contribution")
     if not isinstance(workers, int) or isinstance(workers, bool) or not 1 <= workers <= 8:
         raise ValueError("workers must be an integer between 1 and 8")
+    # Lower-level entry points (including custom scan_all.py) must use this
+    # same gate. The environment option supports existing local runners
+    # without requiring code changes or modifying the old evidence.
+    baseline_evidence = baseline_evidence or os.environ.get("QR_AUDIT_BASELINE_EVIDENCE")
+    if os.environ.get("QR_AUDIT_REQUIRE_BASELINE") not in (None, "", "0", "1"):
+        raise ValueError("QR_AUDIT_REQUIRE_BASELINE must be 0 or 1")
+    require_upgrade_gate = require_upgrade_gate or (
+        os.environ.get("QR_AUDIT_REQUIRE_BASELINE") == "1"
+    )
+    if require_upgrade_gate and not baseline_evidence:
+        raise ValueError("BASELINE_EVIDENCE_REQUIRED: no verified historical run was supplied")
 
     # External source-file adapters need no image-decoding dependencies.
     try:
@@ -564,6 +577,8 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
     manifest["connected_strategy_count"] = registered_count
     manifest["declared_strategy_count"] = len(strategy_ids)
     manifest["required_strategies"] = required_strategies
+    manifest["recognition_regression_status"] = "NOT_RUN"
+    manifest["upgrade_gate_required"] = bool(require_upgrade_gate)
     manifest_path = evidence / "run-manifest.json"
     with manifest_path.open("x", encoding="utf-8") as output:
         json.dump(manifest, output, ensure_ascii=False, indent=2)
@@ -599,18 +614,33 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
     manifest["finished_at"] = utc_now()
     manifest["attempt_count"] = total
     manifest["run_status"] = "COMPLETE"
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    # The gate lives in run_scan, not just in the high-level run.py CLI;
+    # any scanner invoking this function gets identical enforcement.
+    regression = None
+    if baseline_evidence:
+        try:
+            regression = compare_directories(baseline_evidence, evidence)
+        except (ValueError, OSError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            regression = {"status": "BLOCKED_UNVERIFIABLE", "error": str(exc)}
+        (evidence / "recognition-regression.json").write_text(
+            json.dumps(regression, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        manifest["recognition_regression_status"] = regression["status"]
     if manifest["source_consistency"]["status"] != "STABLE":
         status = "BLOCKED_SOURCE_CHANGED"
     elif manifest["input_consistency"]["status"] != "STABLE":
         status = "BLOCKED_INPUT_CHANGED"
+    elif regression and regression["status"] != "PASS_NON_REGRESSION":
+        status = regression["status"]
     else:
-        status = "PASS_BASELINE_ONLY"
+        status = "PASS_NON_REGRESSION" if regression else "PASS_BASELINE_ONLY"
+    manifest["acceptance_status"] = status
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     return {
         "status": status, "run_root": str(run_root), "evidence": str(evidence),
         "image_count": len(manifest["images"]), "decoded_images": decoded_images,
         "attempts": total, "run_id": run_id, "workers": workers,
-        "capability_status": capability_status,
+        "capability_status": capability_status, "regression": regression,
         "input_consistency": manifest["input_consistency"],
         "source_consistency": manifest["source_consistency"],
     }
@@ -631,6 +661,10 @@ def main():
                         help="explicit frozen strategy registry; default original V01-V28")
     parser.add_argument("--require-strategy", action="append", default=[],
                         help="fail before run if a required legacy strategy is unconnected")
+    parser.add_argument("--baseline-evidence",
+                        help="required historical evidence for upgrade acceptance")
+    parser.add_argument("--require-upgrade-gate", action="store_true",
+                        help="reject scan without historical evidence")
     parser.add_argument("--max-pixels", type=int, default=50000000)
     parser.add_argument("--left-name", default="WAVES_QR")
     parser.add_argument("--right-name", default="WAVES_QR_RAW")
@@ -641,9 +675,11 @@ def main():
             args.max_pixels, args.left_name, args.right_name, args.mode, args.adapter_module,
             workers=args.workers, registry_path=args.registry_path,
             required_strategies=args.require_strategy,
+            baseline_evidence=args.baseline_evidence,
+            require_upgrade_gate=args.require_upgrade_gate,
         )
         print(json.dumps(result, ensure_ascii=False))
-        return 0 if result["status"] == "PASS_BASELINE_ONLY" else 3
+        return 0 if result["status"] in ("PASS_BASELINE_ONLY", "PASS_NON_REGRESSION") else 3
     except Exception as exc:
         print(json.dumps({"status": "BLOCKED", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2

@@ -58,6 +58,32 @@ def _enhance(image, context, variant):
             gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
             cv2.THRESH_BINARY, 11, 2,
         )
+    elif variant == "gamma":
+        # Deterministic exposure branch; preserve the original image in B01.
+        np = context["numpy"]
+        median = float(np.median(gray))
+        gamma = 0.65 if median < 95 else 1.6 if median > 180 else 0.9
+        lut = np.array([
+            round(255.0 * ((i / 255.0) ** gamma)) for i in range(256)
+        ], dtype=np.uint8)
+        processed = cv2.LUT(gray, lut)
+    elif variant == "sauvola":
+        # Use bounded local statistics rather than requiring opencv-contrib.
+        np = context["numpy"]
+        source = gray.astype(np.float32)
+        mean = cv2.boxFilter(source, -1, (15, 15))
+        squared = cv2.boxFilter(source * source, -1, (15, 15))
+        deviation = np.sqrt(np.maximum(squared - mean * mean, 0))
+        threshold = mean * (1 + 0.34 * (deviation / 128 - 1))
+        processed = np.where(source > threshold, 255, 0).astype(np.uint8)
+    elif variant == "flatfield":
+        # Normalize slow brightness gradients before binary conversion.
+        np = context["numpy"]
+        background = cv2.GaussianBlur(gray, (31, 31), 0)
+        normalized = cv2.divide(gray, np.maximum(background, 1), scale=128)
+        _, processed = cv2.threshold(
+            normalized, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        )
     else:
         raise ValueError("unknown recognition boost variant")
     return _pad_upscale(processed, cv2)
@@ -76,13 +102,14 @@ def register_qr_audit(strategies, decoders, context):
     for strategy_id, variant in (
         ("B02", "quiet_zone"), ("B03", "otsu"),
         ("B04", "clahe_otsu"), ("B05", "adaptive"),
+        ("B06", "gamma"), ("B07", "sauvola"), ("B08", "flatfield"),
     ):
         strategies.register(
             strategy_id,
             lambda image, ctx, params, selected=variant: _enhance(
                 image, ctx, selected
             ),
-            version="reference-boost-1",
+            version="reference-boost-2",
             parameters={
                 "operation": variant, "scale": UPSCALE,
                 "white_border_pixels": BORDER_PIXELS,

@@ -1,11 +1,11 @@
 {
   "name": "qr-audit",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "files": [
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "fc0fdb637c7f77ada0cfc539c1bfb0a46b76e0f47bc319fb0f1ca93f72424c84",
-      "size_bytes": 1108
+      "sha256": "d6138493c428e81a3e4c22d59b14514626af47ccd5c547037c7543c69197a485",
+      "size_bytes": 1097
     },
     {
       "path": ".gitignore",
@@ -24,8 +24,8 @@
     },
     {
       "path": "assets/strategy-registry.boost.json",
-      "sha256": "b35c1270ec7e80c84e6905c9d5b70addfae126df32e824bfb7eb6a11ee777ad8",
-      "size_bytes": 3295
+      "sha256": "8d985abb8c41f4d3e774bd42bffb9a052735177e234da9415d6c54a86dcac117",
+      "size_bytes": 5028
     },
     {
       "path": "assets/strategy-registry.initial.json",
@@ -41,6 +41,11 @@
       "path": "docs/architecture.md",
       "sha256": "3ce806af9da4eece34fb16c5ae23e9c27734f31df5f590005eb67fe862a2a15f",
       "size_bytes": 2521
+    },
+    {
+      "path": "docs/brightness-experiment.md",
+      "sha256": "68e76d5ad421fd68912122e52af3df9148d6641b96d99f9ed6e53917266e4ecb",
+      "size_bytes": 1714
     },
     {
       "path": "docs/comparison.md",
@@ -73,6 +78,11 @@
       "size_bytes": 3876
     },
     {
+      "path": "docs/native-coverage-acceptance.md",
+      "sha256": "893493841c31aecc5149ef0c24c8b75188b8bd5598ac91ae6e146c962c8668fc",
+      "size_bytes": 2166
+    },
+    {
       "path": "docs/real-scanner-onboarding.md",
       "sha256": "4dfdec29bae4df1f82891185d4603a5ad94deb4fabeeb39784b23fcd88b3c2d2",
       "size_bytes": 6252
@@ -91,6 +101,11 @@
       "path": "docs/scanning-optimization.md",
       "sha256": "ea1a7f5672cb50457f20210390c9b04029f50f7e564b97d72f24cd1b579d0276",
       "size_bytes": 4480
+    },
+    {
+      "path": "docs/wechat-decoder-experiment.md",
+      "sha256": "e988e0b6a8f937ed66f8fad70ed61a1de1e2208a0467277bc8926634d31b0b03",
+      "size_bytes": 2124
     },
     {
       "path": "evals/discovery-baseline.md",
@@ -114,13 +129,13 @@
     },
     {
       "path": "README.md",
-      "sha256": "5e6a29c02a8a99d0b5eabb9e12fadba6560504c31bf79ae7e421fe2269ef77b0",
-      "size_bytes": 15516
+      "sha256": "cd978f1bc83fff331db25492d650f1d32422b83255701a379e8bdf21c6f7bb95",
+      "size_bytes": 16896
     },
     {
       "path": "README.zh-CN.md",
-      "sha256": "f2ca5794ab3ea258cfbdab827c7e1829ced9260b84ca0a7f82ab3d90e1e25de2",
-      "size_bytes": 10125
+      "sha256": "85230d84f7f8ff07f09966e47e557b799004d17092bef24c30210491c507fd8c",
+      "size_bytes": 11427
     },
     {
       "path": "references/adapter-contract.md",
@@ -159,8 +174,8 @@
     },
     {
       "path": "RELEASE-NOTES.md",
-      "sha256": "c0aba022c9b2a88c54550039a37eb49838d065283f977d131b674a46a7edbc09",
-      "size_bytes": 8627
+      "sha256": "665bc625bd3116e8f4a477dd2378b35661f91fe7fe3543fe29de1f6c3e57230a",
+      "size_bytes": 10024
     },
     {
       "path": "scripts/analyze_contributions.py",
@@ -194,8 +209,8 @@
     },
     {
       "path": "scripts/install_tools.py",
-      "sha256": "a508a4d7f2581d3fc3093fdf2bcd151cd64b99931016b5e93504cdc483367215",
-      "size_bytes": 2312
+      "sha256": "644ec972c7eb6be63aa2bb2e5d21e244847038cfa2ec77341577913d24c6413d",
+      "size_bytes": 2367
     },
     {
       "path": "scripts/inventory_images.py",
@@ -203,14 +218,19 @@
       "size_bytes": 10297
     },
     {
+      "path": "scripts/native_coverage_audit.py",
+      "sha256": "d28858d2eb44e244b0495268f876b4313411a7a477cc24d2b01662fec73e87f0",
+      "size_bytes": 4492
+    },
+    {
       "path": "scripts/recognition_boost_adapter.py",
-      "sha256": "33351a0e94b732220315ebcd37576495b943a777fc179c65207d479a32c95573",
-      "size_bytes": 3156
+      "sha256": "2bfcb99b2dd08c0d76abd13662a4bcc6fbe85b899137beab57315a5ef8890e73",
+      "size_bytes": 4510
     },
     {
       "path": "scripts/regression_gate.py",
-      "sha256": "44bc0f733c0e19c831bfd4ddc76a5e98835b6f58578fa28b470bd803a7a17413",
-      "size_bytes": 11830
+      "sha256": "48c19ee4fba5445a48b233f545572e193e6d17bbd20d44fe4454c808bb4abada",
+      "size_bytes": 12949
     },
     {
       "path": "scripts/render_reports.py",
@@ -219,13 +239,13 @@
     },
     {
       "path": "scripts/run.py",
-      "sha256": "f15af86b7afd36b5b35cdb72d953d0e30da1b2f6f8d666bacd5520440969f145",
-      "size_bytes": 11811
+      "sha256": "d5b1da91cbfc933079923474c03c2a9d54c9b82a7531d22df63d49abf4ff905f",
+      "size_bytes": 11361
     },
     {
       "path": "scripts/scan_images.py",
-      "sha256": "ca2fea50195d8b16a26f55570ce71e136c6d8de8227134200f3d328c599cd8f1",
-      "size_bytes": 31812
+      "sha256": "5435640c9fc0fc7927c81ec4ae19cdebc4561f43c3eca711545391c3d3ec6fd8",
+      "size_bytes": 34079
     },
     {
       "path": "scripts/validate_evidence.py",
@@ -234,8 +254,13 @@
     },
     {
       "path": "scripts/validate_skill_package.py",
-      "sha256": "5401c44916ba808ab79f1759e17c2879927ad4ffa9ce5c3aa2e9412b4328d016",
-      "size_bytes": 2190
+      "sha256": "3e78fe9dc9804b668bdbff4108b5f5e18ad733109edd8e27096faf848e4749cc",
+      "size_bytes": 2539
+    },
+    {
+      "path": "scripts/wechat_decoder_adapter.py",
+      "sha256": "171ab55aae38fca2dc2feef52ec6697c7b0568c2f6991a84295659a30840d71c",
+      "size_bytes": 3560
     },
     {
       "path": "SECURITY.md",
@@ -244,8 +269,13 @@
     },
     {
       "path": "SKILL.md",
-      "sha256": "b0db583953516073b9ea8f6f35f5ea0aa23c13f2761edecc88f8dc9bf46b665d",
-      "size_bytes": 24793
+      "sha256": "48beeaab1dce61c17023269f78c632ee5519e00238dfa6340bcf51c1a1425962",
+      "size_bytes": 26982
+    },
+    {
+      "path": "tests/test_brightness_boost.py",
+      "sha256": "3ad8e20c72654db3f74374c2e3a6a7b35296fcf8972225ad67f059d6213444c1",
+      "size_bytes": 3056
     },
     {
       "path": "tests/test_contribution_certification.py",
@@ -263,14 +293,24 @@
       "size_bytes": 5968
     },
     {
+      "path": "tests/test_native_coverage_audit.py",
+      "sha256": "9bc40fd00ced4d3584c41da4250833543cfc36579871e0a4d76f981445b20d8c",
+      "size_bytes": 2741
+    },
+    {
       "path": "tests/test_recognition_boost.py",
-      "sha256": "08935051ad70eda8e11ef29c7693cc7d3f6b0d5b6abe426b6427dfdb60a0fb21",
-      "size_bytes": 5425
+      "sha256": "aafb95b5c94641743c8ea43cd51f1fc24675ddfe8ca83cb94bebab0e1a744834",
+      "size_bytes": 5467
     },
     {
       "path": "tests/test_regression_gate.py",
-      "sha256": "29aaf8ef51f5e1cc985d72c62e931465a131a334db7ee8a5b62f210bffef1201",
-      "size_bytes": 8389
+      "sha256": "12b3c4e33c7e25b7b77ae105faa2e2de81b8655890ddcfdbbdf3e2d3006514bf",
+      "size_bytes": 11275
+    },
+    {
+      "path": "tests/test_run_scan_gate.py",
+      "sha256": "d124955fb3035ebbd306f8feaed26808bf1bef089d7c9c82e781f1c0b1eec06d",
+      "size_bytes": 3578
     },
     {
       "path": "tests/test_runtime_source_file.py",
@@ -286,6 +326,11 @@
       "path": "tests/test_tools.py",
       "sha256": "a7038c067eb2fe14f345fe18167f250a40c8773df349898976af1cf5ed178dae",
       "size_bytes": 26962
+    },
+    {
+      "path": "tests/test_wechat_decoder_adapter.py",
+      "sha256": "138cb156c83bd8bed4eaa17f7734d9f9d78144a68273c27bb91b87c552f8afd6",
+      "size_bytes": 3863
     }
   ]
 }

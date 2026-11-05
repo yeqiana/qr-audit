@@ -44,6 +44,8 @@ def main():
                              help="fail before scan if a required legacy strategy has no executor")
         command.add_argument("--baseline-evidence",
                              help="upgrade gate: preserve all previously decoded images, pairs and payloads")
+        command.add_argument("--require-upgrade-gate", action="store_true",
+                             help="fail before scan without a historical baseline")
         command.add_argument("--source-root", help="all 模式只读检索源码候选位置")
 
     audit = sub.add_parser("audit", help="源码候选审计（关键词命中不是实现确认）")
@@ -128,6 +130,8 @@ def main():
             args.experiment_mode, args.adapter_module, workers=args.workers,
             registry_path=args.registry_path,
             required_strategies=args.require_strategy,
+            baseline_evidence=args.baseline_evidence,
+            require_upgrade_gate=args.require_upgrade_gate,
         )
         evidence = Path(run_result["evidence"])
         manifest = _load_json(evidence / "run-manifest.json")
@@ -143,17 +147,7 @@ def main():
             inventory_after=inventory_after,
         )
         report_result = build_report_models.build(run_result["run_root"])
-        regression = None
-        if args.baseline_evidence:
-            try:
-                regression = regression_gate.compare_directories(
-                    args.baseline_evidence, run_result["evidence"]
-                )
-            except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
-                regression = {"status": "BLOCKED_UNVERIFIABLE", "error": str(exc)}
-            (evidence / "recognition-regression.json").write_text(
-                json.dumps(regression, ensure_ascii=False, indent=2), encoding="utf-8"
-            )
+        regression = run_result["regression"]
         contribution_output = None
         if args.experiment_mode == "contribution" and check["contribution_metrics_valid"]:
             contribution_result = analyze_contributions.analyze(
@@ -182,14 +176,8 @@ def main():
             )
             contribution_output = str(contribution_dir)
 
-        if regression and regression["status"] != "PASS_NON_REGRESSION":
-            status = regression["status"]
-            exit_code = 3
-        elif run_result["status"] == "BLOCKED_SOURCE_CHANGED":
-            status = "BLOCKED_SOURCE_CHANGED"
-            exit_code = 3
-        elif run_result["status"] == "BLOCKED_INPUT_CHANGED":
-            status = "BLOCKED_INPUT_CHANGED"
+        if run_result["status"].startswith("BLOCKED_"):
+            status = run_result["status"]
             exit_code = 3
         elif args.experiment_mode == "contribution" and not check["contribution_metrics_valid"]:
             status = "BLOCKED_INCOMPLETE_EXPERIMENT"
@@ -198,7 +186,9 @@ def main():
             status = "BLOCKED_EVIDENCE_INVALID"
             exit_code = 3
         else:
-            status = "PASS_BASELINE_ONLY" if args.experiment_mode == "scan" else "PASS_CONTRIBUTION"
+            status = ("PASS_NON_REGRESSION" if regression
+                      else "PASS_BASELINE_ONLY" if args.experiment_mode == "scan"
+                      else "PASS_CONTRIBUTION")
             exit_code = 0
 
         info = {

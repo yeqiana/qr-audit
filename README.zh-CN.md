@@ -1,7 +1,7 @@
 # QR Audit — 离线二维码扫描与策略审计 Skill
 
 **Skill 名称：** `qr-audit`  
-**版本：** `1.4.1`
+**版本：** `1.5.0`
 **用途：** 二维码离线批量扫描、扫描器源码审计、策略贡献度实验，以及 Markdown + 静态离线 HTML 报告交付。
 
 ## 能做什么
@@ -106,7 +106,7 @@ python "$skill\scripts\run.py" scan --input-root "$input" --report-root "$report
 # 只读源码审计候选（不能以关键词命中代替人工核对）
 python "$skill\scripts\run.py" audit --source-root (Join-Path $project 'qr-tools') --output (Join-Path $reports 'audit-hints.json')
 
-# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.4.1
+# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.5.0
 python "$skill\scripts\install_tools.py" --workspace "$project"
 ```
 
@@ -162,3 +162,19 @@ python scripts/regression_gate.py --baseline-evidence "D:\\old\\evidence" --cand
 任一旧成功丢失、载荷不一致、输入 SHA-256 或配对结构不同都返回非零退出码；新增加成功不能抵消旧样本丢失。历史扫描共 431 张成功文件、409 个成功配对，只是**最小统计基线**，不能代替逐项比较。
 
 另外修正安装器，确保带出 B01–B05 增强适配器、实验策略注册表和回归校验器。详见 `docs/recognition-regression-gate.md`。当前仓库的合成测试不能替代另一台电脑实际 2,560 图集验收。
+
+## v1.5.0：识别能力保留 + 亮度与微信模型独立实验
+
+四项并行改造：兼容旧版配对证据并在 **run_scan 底层**统一回归门禁、V04/V10等原生调用证据审计、B06动态Gamma/B07 Sauvola/B08背景校正、可选的OpenCV WeChatQRCode离线解码器。
+
+**在用于验收升级的本机 Runner 进程环境中**明确传历史证据目录，避免低层 `scan_all.py` 绕过上层 `run.py`：
+
+```powershell
+$env:QR_AUDIT_BASELINE_EVIDENCE = "D:\\historical\\evidence"
+$env:QR_AUDIT_REQUIRE_BASELINE = "1"
+python scripts/run.py scan --input-root "D:\\images" --report-root "D:\\reports" --workers 1 --baseline-evidence "$env:QR_AUDIT_BASELINE_EVIDENCE"
+```
+
+上例只说明门禁用法：**不能直接用默认V01–V03参考扫描器替换原版**。恢复旧 V04/V10/V11/V12 必须由原电脑实际接入并有原生执行记录和零回退证据。新 B01–B08 需要显式 `--registry-path assets/strategy-registry.boost.json --adapter-module recognition_boost_adapter`；WeChat需额外 `--adapter-module wechat_decoder_adapter --decoder wechat` 及预先准备的本地模型。独立实验结果不能混同手机微信实扫效果。
+
+参见 `docs/native-coverage-acceptance.md`、`docs/brightness-experiment.md`、`docs/wechat-decoder-experiment.md`。

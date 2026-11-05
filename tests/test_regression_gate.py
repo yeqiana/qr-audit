@@ -130,6 +130,59 @@ class RegressionGateTests(unittest.TestCase):
                                      required_strategies=["V10"])
             self.assertFalse((root / "results").exists())
 
+
+    def test_legacy_pair_member_aliases_are_read_without_rewriting(self):
+        with tempfile.TemporaryDirectory() as folder:
+            old = make_evidence(folder, "old", {"WAVES_QR"})
+            new = make_evidence(folder, "new", {"WAVES_QR"})
+            inv_path = old / "inventory.json"
+            inv = json.loads(inv_path.read_text(encoding="utf-8"))
+            for group in inv["groups"]:
+                for pair in group["pairs"]:
+                    pair["left_ids"] = pair.pop("left_file_ids")
+                    pair["right_ids"] = pair.pop("right_file_ids")
+            inv_path.write_text(json.dumps(inv), encoding="utf-8")
+            self.assertEqual(
+                regression_gate.compare_directories(old, new)["status"],
+                "PASS_NON_REGRESSION"
+            )
+
+    def test_mixed_aliases_conflict_is_unverifiable(self):
+        with tempfile.TemporaryDirectory() as folder:
+            old = make_evidence(folder, "old", {"WAVES_QR"})
+            inv_path = old / "inventory.json"
+            inv = json.loads(inv_path.read_text(encoding="utf-8"))
+            pair = inv["groups"][0]["pairs"][0]
+            pair["left_ids"] = ["bad-identifier"]
+            inv_path.write_text(json.dumps(inv), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "conflicting historical"):
+                regression_gate.load_evidence(old)
+
+    def test_new_conflicting_payload_is_not_nonregression(self):
+        with tempfile.TemporaryDirectory() as folder:
+            old = make_evidence(folder, "old", {"WAVES_QR"}, payload="correct")
+            new = make_evidence(folder, "new", {"WAVES_QR"}, payload="correct")
+            path = new / "attempts.jsonl"
+            rows = [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines()]
+            decoded = next(x for x in rows if x["status"] == "DECODED")
+            added = dict(decoded, attempt_id="additional-candidate", payload="wrong",
+                         payloads=["wrong"])
+            rows.append(added)
+            path.write_text("\n".join(json.dumps(x) for x in rows) + "\n", encoding="utf-8")
+            result = regression_gate.compare_directories(old, new)
+            self.assertEqual(result["payload_changed_images"], 1)
+            self.assertEqual(result["status"], "BLOCKED_RECOGNITION_REGRESSION")
+
+    def test_direct_run_scan_enforces_baseline_from_environment(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "input").mkdir()
+            with patch.dict("os.environ", {"QR_AUDIT_REQUIRE_BASELINE": "1"}, clear=False):
+                with self.assertRaisesRegex(ValueError, "BASELINE_EVIDENCE_REQUIRED"):
+                    scan_images.run_scan(root / "input", root / "reports")
+            self.assertFalse((root / "reports").exists())
+
     def test_legacy_string_identity_can_be_compared_without_plaintext(self):
         digest = hashlib.sha256(b"older-code").hexdigest()
         row = {

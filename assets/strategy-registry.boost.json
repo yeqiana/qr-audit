@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "registry_id": "qr-audit.boost-reference-v1",
-  "description": "Independent opt-in OpenCV reference experiments B01-B05; original V01-V28 untouched.",
+  "registry_id": "qr-audit.boost-reference-v2",
+  "description": "Independent opt-in OpenCV reference experiments B01-B08; original V01-V28 untouched.",
   "policy": {
     "automatic_deletion_allowed": false,
     "not_native_v_strategy": true,
@@ -102,6 +102,63 @@
       "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
       "runtime_confirmed": false,
       "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy."
+    },
+    {
+      "strategy_id": "B06",
+      "order": 6,
+      "name_zh": "基于亮度中位数动态Gamma增强",
+      "family": "illumination",
+      "tags": [
+        "EXPERIMENTAL",
+        "REFERENCE_OPENCV"
+      ],
+      "parameters": {
+        "operation": "gamma",
+        "scale": 4,
+        "white_border_pixels": 16,
+        "max_output_pixels": 8000000
+      },
+      "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
+      "runtime_confirmed": false,
+      "notes": "Independent opt-in Bxx reference experiment; not a native V strategy or guaranteed improvement."
+    },
+    {
+      "strategy_id": "B07",
+      "order": 7,
+      "name_zh": "Sauvola局部二值化",
+      "family": "illumination",
+      "tags": [
+        "EXPERIMENTAL",
+        "REFERENCE_OPENCV"
+      ],
+      "parameters": {
+        "operation": "sauvola",
+        "scale": 4,
+        "white_border_pixels": 16,
+        "max_output_pixels": 8000000
+      },
+      "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
+      "runtime_confirmed": false,
+      "notes": "Independent opt-in Bxx reference experiment; not a native V strategy or guaranteed improvement."
+    },
+    {
+      "strategy_id": "B08",
+      "order": 8,
+      "name_zh": "背景光照校正+Otsu",
+      "family": "illumination",
+      "tags": [
+        "EXPERIMENTAL",
+        "REFERENCE_OPENCV"
+      ],
+      "parameters": {
+        "operation": "flatfield",
+        "scale": 4,
+        "white_border_pixels": 16,
+        "max_output_pixels": 8000000
+      },
+      "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
+      "runtime_confirmed": false,
+      "notes": "Independent opt-in Bxx reference experiment; not a native V strategy or guaranteed improvement."
     }
   ]
 }
