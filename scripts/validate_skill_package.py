@@ -26,6 +26,8 @@ REQUIRED = [
     "tests/test_brightness_boost.py", "docs/brightness-experiment.md",
     "scripts/wechat_decoder_adapter.py", "tests/test_wechat_decoder_adapter.py",
     "docs/wechat-decoder-experiment.md",
+    "scripts/fallback_pipeline.py", "tests/test_fallback_pipeline.py",
+    "docs/failure-fallback-usage.md",
 ]
 
 
@@ -44,7 +46,7 @@ def check():
     if any("qr-offline-scan-audit" in path.read_text(encoding="utf-8") for path in ROOT.rglob("*.md")):
         errors.append("残留旧 Skill 名称")
     manifest = json.loads((ROOT / "PACKAGE-MANIFEST.json").read_text(encoding="utf-8"))
-    if manifest.get("version") != "1.5.0":
+    if manifest.get("version") != "1.5.1":
         errors.append("发布清单版本与当前 Skill 版本不匹配")
     listed = set()
     for entry in manifest.get("files", []):
