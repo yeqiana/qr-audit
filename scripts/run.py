@@ -7,6 +7,7 @@ from pathlib import Path
 import audit_source
 import analyze_contributions
 import build_report_models
+import regression_gate
 import scan_images
 from evidence_contract import validate
 from validate_evidence import load_jsonl
@@ -39,6 +40,10 @@ def main():
                              help="1-8 image threads; benchmark before raising the default")
         command.add_argument("--registry-path",
                              help="optional isolated strategy registry; defaults to original V01-V28")
+        command.add_argument("--require-strategy", action="append", default=[],
+                             help="fail before scan if a required legacy strategy has no executor")
+        command.add_argument("--baseline-evidence",
+                             help="upgrade gate: preserve all previously decoded images, pairs and payloads")
         command.add_argument("--source-root", help="all 模式只读检索源码候选位置")
 
     audit = sub.add_parser("audit", help="源码候选审计（关键词命中不是实现确认）")
@@ -122,6 +127,7 @@ def main():
             args.max_pixels, args.left_name, args.right_name,
             args.experiment_mode, args.adapter_module, workers=args.workers,
             registry_path=args.registry_path,
+            required_strategies=args.require_strategy,
         )
         evidence = Path(run_result["evidence"])
         manifest = _load_json(evidence / "run-manifest.json")
@@ -137,6 +143,17 @@ def main():
             inventory_after=inventory_after,
         )
         report_result = build_report_models.build(run_result["run_root"])
+        regression = None
+        if args.baseline_evidence:
+            try:
+                regression = regression_gate.compare_directories(
+                    args.baseline_evidence, run_result["evidence"]
+                )
+            except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+                regression = {"status": "BLOCKED_UNVERIFIABLE", "error": str(exc)}
+            (evidence / "recognition-regression.json").write_text(
+                json.dumps(regression, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
         contribution_output = None
         if args.experiment_mode == "contribution" and check["contribution_metrics_valid"]:
             contribution_result = analyze_contributions.analyze(
@@ -165,7 +182,10 @@ def main():
             )
             contribution_output = str(contribution_dir)
 
-        if run_result["status"] == "BLOCKED_SOURCE_CHANGED":
+        if regression and regression["status"] != "PASS_NON_REGRESSION":
+            status = regression["status"]
+            exit_code = 3
+        elif run_result["status"] == "BLOCKED_SOURCE_CHANGED":
             status = "BLOCKED_SOURCE_CHANGED"
             exit_code = 3
         elif run_result["status"] == "BLOCKED_INPUT_CHANGED":
@@ -189,6 +209,8 @@ def main():
             "input_consistency": run_result["input_consistency"],
             "source_consistency": run_result["source_consistency"],
             "workers": run_result["workers"],
+            "capability_status": run_result["capability_status"],
+            "regression": regression,
             "validation": check, "contribution_output": contribution_output,
             "note": (
                 "常规扫描允许提前停止；只有 contribution 模式且全部策略执行器、输入、注册表和源码指纹均核验通过，"

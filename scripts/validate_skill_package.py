@@ -17,6 +17,8 @@ REQUIRED = [
     "scripts/recognition_boost_adapter.py",
     "assets/strategy-registry.boost.json",
     "tests/test_recognition_boost.py", "docs/recognition-boost.md",
+    "scripts/regression_gate.py", "tests/test_regression_gate.py",
+    "docs/recognition-regression-gate.md",
 ]
 
 

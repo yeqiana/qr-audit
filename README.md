@@ -163,3 +163,15 @@ python scripts/run.py scan --input-root "D:\\samples" --report-root "D:\\reports
 ```
 
 Use a frozen SHA-256 input set, stable decoder/options, original raw scans, and independent labeled ground truth before claiming increased **correct** file/pair coverage. The included synthetic QR tests check complete decoded payloads, but **no real historical image dataset has been rescanned**. For full contribution analysis use `--experiment-mode contribution` and the same opt-in registry. See [recognition boost protocol](docs/recognition-boost.md).
+
+## v1.4.1: Fail-closed recognition non-regression gate
+
+Evidence schema PASS and registered strategy IDs do **not** prove old QR decoding coverage was preserved. The default reference scanner still implements V01–V03 only; using it alone must not be presented as an upgrade over an existing native scanner. B01–B05 experimental enhancement modes are independent and do not reproduce the legacy pure-mode branches.
+
+Before an upgrade run, provide `--require-strategy V04 --require-strategy V10` (and other genuinely required native IDs) to reject missing executors before scan start. Supply `--baseline-evidence` on `scripts/run.py scan` to compare the complete old decoded file, eligible pair and payload-identity sets after execution, or run the stand-alone read-only gate:
+
+```powershell
+python scripts/regression_gate.py --baseline-evidence "D:\\old\\evidence" --candidate-evidence "D:\\new\\evidence"
+```
+
+Changed input hashes, lost old decoded files or pairs, conflicting old payload identities, or unverifiable evidence **block upgrade acceptance**, even if the new aggregate success count is larger. The tests use synthetic examples; the actual 2,560-image historical corpus must still be checked on its own machine. The v1.4.1 export installer includes the B-series adapter, experiment registry and regression validator. See [non-regression protocol](docs/recognition-regression-gate.md).

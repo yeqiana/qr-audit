@@ -284,3 +284,15 @@ python "$skill\scripts\run.py" contribution --manifest "<manifest.json>" --attem
 - 先使用 `scan --workers 1` 做小批验证，策略调优与并发调优分开；全量贡献度需 `--experiment-mode contribution` 无早停并通过来源/矩阵验证，绝不能从普通早停扫描推导独占删除损失。
 
 详情见 `docs/recognition-boost.md`。
+
+## P0：版本升级必须通过识别能力零回退门禁（v1.4.1）
+
+**结构校验 PASS / provenance VERIFIED / 28 条注册表 / 生成报告成功，都不等于保留旧版识别能力。** 在对外宣称“升级成功”之前必须：
+1. 核验当前执行入口调用真实原扫描器，检查历史关键成功策略（尤其 V04 Otsu+放大+白边、V10 纯码、V11/V12 8倍放大）与旧 decoder 选项。代码中存在注册定义不代表已执行。
+2. 在扫描前用 `--require-strategy` 强制检查必须接入的旧策略。缺少执行器即 `REQUIRED_STRATEGY_NOT_CONNECTED` 并拒绝启动；不得退回到仅 V01–V03。
+3. 用 `--baseline-evidence` 指定同输入哈希的旧 run；对**每张历史成功图片、每个成功配对及全部已观测载荷身份**做零丢失校验，发现任何回退都返回非零并标记 `BLOCKED_RECOGNITION_REGRESSION`。
+4. 真实输入不存在、基线原始证据不足或配对身份无法对齐时，不得宣称已防止退化。先在真实扫描机器核对，保留历史原始证据。
+5. 新增 B01–B05 只能作为补充实验，不得替代旧原生 V01–V28。新识别收益必须在全部旧成功集合保持的前提下单独报告；同总数不等于零回退。
+
+详细的运行、验收与限制见 `docs/recognition-regression-gate.md`。**没有传基线运行只能称普通扫描结果，不得称升版回归验收通过。**
+

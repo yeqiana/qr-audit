@@ -66,6 +66,7 @@ def source_fingerprint(workspace_root, registry_path, adapter_modules, extra_sou
         Path(__file__).with_name("evidence_contract.py").resolve(),
         Path(__file__).with_name("validate_evidence.py").resolve(),
         Path(__file__).with_name("analyze_contributions.py").resolve(),
+        Path(__file__).with_name("regression_gate.py").resolve(),
         Path(__file__).with_name("build_report_models.py").resolve(),
         Path(__file__).with_name("render_reports.py").resolve(),
         Path(__file__).with_name("run.py").resolve(),
@@ -457,7 +458,8 @@ def execute_image_matrix(run_id, image_meta, strategy_order, strategy_executors,
 
 def run_scan(input_root, report_root, workspace_root=None, decoders=None,
              max_pixels=50000000, left_name="WAVES_QR", right_name="WAVES_QR_RAW",
-             mode="scan", adapter_modules=None, workers=1, registry_path=None):
+             mode="scan", adapter_modules=None, workers=1, registry_path=None,
+             required_strategies=None):
     input_root = Path(input_root).expanduser().resolve()
     report_root = Path(report_root).expanduser().resolve()
     workspace_root = Path(workspace_root).expanduser().resolve() if workspace_root else input_root.parent
@@ -516,6 +518,18 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
     strategy_ids = [row["strategy_id"] for row in registry.get("strategies", [])]
     if not strategy_ids or len(strategy_ids) != len(set(strategy_ids)):
         raise ValueError("selected strategy registry must declare unique non-empty strategy IDs")
+    required_strategies = list(dict.fromkeys(required_strategies or []))
+    not_connected = [
+        strategy_id for strategy_id in required_strategies
+        if strategy_id not in strategy_ids or strategy_executors.get(strategy_id) is None
+    ]
+    if not_connected:
+        raise ValueError("REQUIRED_STRATEGY_NOT_CONNECTED: " + ",".join(not_connected))
+    registered_count = sum(strategy_executors.get(x) is not None for x in strategy_ids)
+    capability_status = (
+        "FULLY_CONNECTED" if registered_count == len(strategy_ids)
+        else "PARTIALLY_CONNECTED" if registered_count else "NOT_CONNECTED"
+    )
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + os.urandom(3).hex()
     run_root = report_root / run_id
     run_root.mkdir(parents=True, exist_ok=False)
@@ -546,6 +560,10 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
         "pending_limit": workers * 2 if workers > 1 else 1,
     }
     manifest["run_status"] = "RUNNING"
+    manifest["capability_status"] = capability_status
+    manifest["connected_strategy_count"] = registered_count
+    manifest["declared_strategy_count"] = len(strategy_ids)
+    manifest["required_strategies"] = required_strategies
     manifest_path = evidence / "run-manifest.json"
     with manifest_path.open("x", encoding="utf-8") as output:
         json.dump(manifest, output, ensure_ascii=False, indent=2)
@@ -592,6 +610,7 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
         "status": status, "run_root": str(run_root), "evidence": str(evidence),
         "image_count": len(manifest["images"]), "decoded_images": decoded_images,
         "attempts": total, "run_id": run_id, "workers": workers,
+        "capability_status": capability_status,
         "input_consistency": manifest["input_consistency"],
         "source_consistency": manifest["source_consistency"],
     }
@@ -610,6 +629,8 @@ def main():
                         help="1-8 independent image threads; default 1 for safest compatibility")
     parser.add_argument("--registry-path",
                         help="explicit frozen strategy registry; default original V01-V28")
+    parser.add_argument("--require-strategy", action="append", default=[],
+                        help="fail before run if a required legacy strategy is unconnected")
     parser.add_argument("--max-pixels", type=int, default=50000000)
     parser.add_argument("--left-name", default="WAVES_QR")
     parser.add_argument("--right-name", default="WAVES_QR_RAW")
@@ -619,6 +640,7 @@ def main():
             args.input_root, args.report_root, args.workspace_root, args.decoder,
             args.max_pixels, args.left_name, args.right_name, args.mode, args.adapter_module,
             workers=args.workers, registry_path=args.registry_path,
+            required_strategies=args.require_strategy,
         )
         print(json.dumps(result, ensure_ascii=False))
         return 0 if result["status"] == "PASS_BASELINE_ONLY" else 3

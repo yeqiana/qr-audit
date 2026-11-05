@@ -1,7 +1,7 @@
 # QR Audit — 离线二维码扫描与策略审计 Skill
 
 **Skill 名称：** `qr-audit`  
-**版本：** `1.4.0`
+**版本：** `1.4.1`
 **用途：** 二维码离线批量扫描、扫描器源码审计、策略贡献度实验，以及 Markdown + 静态离线 HTML 报告交付。
 
 ## 能做什么
@@ -106,7 +106,7 @@ python "$skill\scripts\run.py" scan --input-root "$input" --report-root "$report
 # 只读源码审计候选（不能以关键词命中代替人工核对）
 python "$skill\scripts\run.py" audit --source-root (Join-Path $project 'qr-tools') --output (Join-Path $reports 'audit-hints.json')
 
-# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.4.0
+# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.4.1
 python "$skill\scripts\install_tools.py" --workspace "$project"
 ```
 
@@ -148,3 +148,17 @@ python scripts/run.py scan --input-root "D:\\images" --report-root "D:\\reports"
 ```
 
 不要以“算法数更多、worker 更多、报告更长”为优化目标。参见 `docs/scanning-optimization.md`。
+
+## v1.4.1 强制升级验收：旧成功样本零回退
+
+如果仅运行 `scripts/run.py scan`，而没有传入历史扫描基线，它仍可能因为原生策略未接入只执行 V01–V03。因此不能将 `PASS_BASELINE_ONLY` 当作旧版识别能力保留的证明。
+
+可使用 `--require-strategy V04 --require-strategy V10` 在扫描前检查必须的真实执行器，缺失则拒绝运行；完成后使用 `--baseline-evidence` 与旧扫描证据逐图片、逐配对和载荷身份比较。独立对照命令：
+
+```powershell
+python scripts/regression_gate.py --baseline-evidence "D:\\old\\evidence" --candidate-evidence "D:\\new\\evidence"
+```
+
+任一旧成功丢失、载荷不一致、输入 SHA-256 或配对结构不同都返回非零退出码；新增加成功不能抵消旧样本丢失。历史扫描共 431 张成功文件、409 个成功配对，只是**最小统计基线**，不能代替逐项比较。
+
+另外修正安装器，确保带出 B01–B05 增强适配器、实验策略注册表和回归校验器。详见 `docs/recognition-regression-gate.md`。当前仓库的合成测试不能替代另一台电脑实际 2,560 图集验收。

@@ -1,6 +1,6 @@
 {
   "name": "qr-audit",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "files": [
     {
       "path": ".github/workflows/ci.yml",
@@ -83,6 +83,11 @@
       "size_bytes": 3950
     },
     {
+      "path": "docs/recognition-regression-gate.md",
+      "sha256": "b373f63895701f60b5e153a7d93470e79e08f4f7555aa42b442dfdd2e94ccbba",
+      "size_bytes": 4792
+    },
+    {
       "path": "docs/scanning-optimization.md",
       "sha256": "ea1a7f5672cb50457f20210390c9b04029f50f7e564b97d72f24cd1b579d0276",
       "size_bytes": 4480
@@ -109,13 +114,13 @@
     },
     {
       "path": "README.md",
-      "sha256": "c50e98ef4858a18a09f53c8b7429b6c70482585bcc96db6033e169010d2ebf7a",
-      "size_bytes": 14114
+      "sha256": "5e6a29c02a8a99d0b5eabb9e12fadba6560504c31bf79ae7e421fe2269ef77b0",
+      "size_bytes": 15516
     },
     {
       "path": "README.zh-CN.md",
-      "sha256": "e7e99f8174a59aeb7fe831ae01b1c7f90c459bff3643aab353ce805ad8626b1a",
-      "size_bytes": 8957
+      "sha256": "f2ca5794ab3ea258cfbdab827c7e1829ced9260b84ca0a7f82ab3d90e1e25de2",
+      "size_bytes": 10125
     },
     {
       "path": "references/adapter-contract.md",
@@ -154,8 +159,8 @@
     },
     {
       "path": "RELEASE-NOTES.md",
-      "sha256": "8bdde9a0afb258e74d2677fe4991aea41b6188690660aa547a56ff924fcdb83f",
-      "size_bytes": 6909
+      "sha256": "c0aba022c9b2a88c54550039a37eb49838d065283f977d131b674a46a7edbc09",
+      "size_bytes": 8627
     },
     {
       "path": "scripts/analyze_contributions.py",
@@ -189,8 +194,8 @@
     },
     {
       "path": "scripts/install_tools.py",
-      "sha256": "bd07365203d496932f77f25513407288004da5490129969a3cc28a8af38ff1f8",
-      "size_bytes": 2229
+      "sha256": "a508a4d7f2581d3fc3093fdf2bcd151cd64b99931016b5e93504cdc483367215",
+      "size_bytes": 2312
     },
     {
       "path": "scripts/inventory_images.py",
@@ -203,19 +208,24 @@
       "size_bytes": 3156
     },
     {
+      "path": "scripts/regression_gate.py",
+      "sha256": "44bc0f733c0e19c831bfd4ddc76a5e98835b6f58578fa28b470bd803a7a17413",
+      "size_bytes": 11830
+    },
+    {
       "path": "scripts/render_reports.py",
       "sha256": "cc1cac4a298910a18475018a5fb1000ee580a4d8e78f5458671d2349117fe521",
       "size_bytes": 9450
     },
     {
       "path": "scripts/run.py",
-      "sha256": "d840af0f0bf913b79f5e7300940dd07684ddf46b393f6184369f139a25da82d5",
-      "size_bytes": 10572
+      "sha256": "f15af86b7afd36b5b35cdb72d953d0e30da1b2f6f8d666bacd5520440969f145",
+      "size_bytes": 11811
     },
     {
       "path": "scripts/scan_images.py",
-      "sha256": "d6fd6fa43a94e1c4e9485630000ade3084f58c46f3805f518f2a72e2a978b253",
-      "size_bytes": 30581
+      "sha256": "ca2fea50195d8b16a26f55570ce71e136c6d8de8227134200f3d328c599cd8f1",
+      "size_bytes": 31812
     },
     {
       "path": "scripts/validate_evidence.py",
@@ -224,8 +234,8 @@
     },
     {
       "path": "scripts/validate_skill_package.py",
-      "sha256": "536c9f7ca1ed3a3f68073ca5bc16e6ab41626fabee95051139185348a05a3b0f",
-      "size_bytes": 2080
+      "sha256": "5401c44916ba808ab79f1759e17c2879927ad4ffa9ce5c3aa2e9412b4328d016",
+      "size_bytes": 2190
     },
     {
       "path": "SECURITY.md",
@@ -234,8 +244,8 @@
     },
     {
       "path": "SKILL.md",
-      "sha256": "9c34dc1e592dd8b7386d75d23f8316fc715b0a23a5878d1b3c6554c981df0c91",
-      "size_bytes": 23356
+      "sha256": "b0db583953516073b9ea8f6f35f5ea0aa23c13f2761edecc88f8dc9bf46b665d",
+      "size_bytes": 24793
     },
     {
       "path": "tests/test_contribution_certification.py",
@@ -256,6 +266,11 @@
       "path": "tests/test_recognition_boost.py",
       "sha256": "08935051ad70eda8e11ef29c7693cc7d3f6b0d5b6abe426b6427dfdb60a0fb21",
       "size_bytes": 5425
+    },
+    {
+      "path": "tests/test_regression_gate.py",
+      "sha256": "29aaf8ef51f5e1cc985d72c62e931465a131a334db7ee8a5b62f210bffef1201",
+      "size_bytes": 8389
     },
     {
       "path": "tests/test_runtime_source_file.py",
