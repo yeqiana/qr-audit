@@ -39,7 +39,7 @@ class FallbackPlanTests(unittest.TestCase):
         self.assertEqual(filters["native"], {"V01", "V10"})
         self.assertEqual(filters["opencv"], {"B01", "B06", "B08"})
         self.assertEqual(filters["zxingcpp"], {"B01", "B06", "B08"})
-        self.assertEqual(filters["wechat"], {"W01"})
+        self.assertEqual(filters["wechat"], {"B06", "B08", "W01"})
 
     def test_rescue_summary_counts_only_newly_decoded_pairs(self):
         manifest = {

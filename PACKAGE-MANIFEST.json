@@ -309,8 +309,8 @@
     },
     {
       "path": "tests/test_fallback_pipeline.py",
-      "sha256": "922fb6c8a3a47b9fcc05ac2668cb9e49a25825c21ec29ec1a5e6efb3f0536873",
-      "size_bytes": 7210
+      "sha256": "7cd54695e2c5fea1f1fdd463e54e48c705a0a19d549fc7a8cb79d6a0b022872b",
+      "size_bytes": 7224
     },
     {
       "path": "tests/test_geometry_recovery.py",
