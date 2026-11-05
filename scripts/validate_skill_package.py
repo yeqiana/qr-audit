@@ -14,6 +14,9 @@ REQUIRED = [
     "tests/test_evidence_hardening.py", "docs/real-scanner-onboarding.md",
     "tests/test_contribution_certification.py", "docs/local-runner-p0-acceptance.md",
     "tests/test_scan_fresh_workers.py", "docs/scanning-optimization.md",
+    "scripts/recognition_boost_adapter.py",
+    "assets/strategy-registry.boost.json",
+    "tests/test_recognition_boost.py", "docs/recognition-boost.md",
 ]
 
 

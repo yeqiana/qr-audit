@@ -457,7 +457,7 @@ def execute_image_matrix(run_id, image_meta, strategy_order, strategy_executors,
 
 def run_scan(input_root, report_root, workspace_root=None, decoders=None,
              max_pixels=50000000, left_name="WAVES_QR", right_name="WAVES_QR_RAW",
-             mode="scan", adapter_modules=None, workers=1):
+             mode="scan", adapter_modules=None, workers=1, registry_path=None):
     input_root = Path(input_root).expanduser().resolve()
     report_root = Path(report_root).expanduser().resolve()
     workspace_root = Path(workspace_root).expanduser().resolve() if workspace_root else input_root.parent
@@ -509,8 +509,13 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
             )
 
     inventory = build_inventory(input_root, left_name, right_name)
-    registry_path = Path(__file__).resolve().parents[1] / "assets" / "strategy-registry.initial.json"
+    registry_path = Path(registry_path).expanduser().resolve() if registry_path else (
+        Path(__file__).resolve().parents[1] / "assets" / "strategy-registry.initial.json"
+    )
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    strategy_ids = [row["strategy_id"] for row in registry.get("strategies", [])]
+    if not strategy_ids or len(strategy_ids) != len(set(strategy_ids)):
+        raise ValueError("selected strategy registry must declare unique non-empty strategy IDs")
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + os.urandom(3).hex()
     run_root = report_root / run_id
     run_root.mkdir(parents=True, exist_ok=False)
@@ -603,6 +608,8 @@ def main():
     parser.add_argument("--mode", choices=["scan", "contribution"], default="scan")
     parser.add_argument("--workers", type=int, default=1,
                         help="1-8 independent image threads; default 1 for safest compatibility")
+    parser.add_argument("--registry-path",
+                        help="explicit frozen strategy registry; default original V01-V28")
     parser.add_argument("--max-pixels", type=int, default=50000000)
     parser.add_argument("--left-name", default="WAVES_QR")
     parser.add_argument("--right-name", default="WAVES_QR_RAW")
@@ -611,7 +618,7 @@ def main():
         result = run_scan(
             args.input_root, args.report_root, args.workspace_root, args.decoder,
             args.max_pixels, args.left_name, args.right_name, args.mode, args.adapter_module,
-            workers=args.workers,
+            workers=args.workers, registry_path=args.registry_path,
         )
         print(json.dumps(result, ensure_ascii=False))
         return 0 if result["status"] == "PASS_BASELINE_ONLY" else 3

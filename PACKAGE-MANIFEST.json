@@ -1,11 +1,11 @@
 {
   "name": "qr-audit",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "files": [
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "1d025d634fcd321835e151e23089c5c516bff33203af477a64a6124b0c6a3f54",
-      "size_bytes": 614
+      "sha256": "fc0fdb637c7f77ada0cfc539c1bfb0a46b76e0f47bc319fb0f1ca93f72424c84",
+      "size_bytes": 1108
     },
     {
       "path": ".gitignore",
@@ -21,6 +21,11 @@
       "path": "assets/examples/report-model.example.json",
       "sha256": "1877d3b79ced2f0cfd9c133fe3d0367faf9439d392d117a54207dba56544f7d2",
       "size_bytes": 710
+    },
+    {
+      "path": "assets/strategy-registry.boost.json",
+      "sha256": "b35c1270ec7e80c84e6905c9d5b70addfae126df32e824bfb7eb6a11ee777ad8",
+      "size_bytes": 3295
     },
     {
       "path": "assets/strategy-registry.initial.json",
@@ -73,6 +78,11 @@
       "size_bytes": 6252
     },
     {
+      "path": "docs/recognition-boost.md",
+      "sha256": "cf53a9efbe8c2e74c33464c5f412ac28dad363c795fd7fa2c3c9a5bdec5d3627",
+      "size_bytes": 3950
+    },
+    {
       "path": "docs/scanning-optimization.md",
       "sha256": "ea1a7f5672cb50457f20210390c9b04029f50f7e564b97d72f24cd1b579d0276",
       "size_bytes": 4480
@@ -99,12 +109,12 @@
     },
     {
       "path": "README.md",
-      "sha256": "6050972b91170ed3aabfb27d8c82c1569353cd85a9c2326ed361fc37413f2a68",
-      "size_bytes": 12852
+      "sha256": "c50e98ef4858a18a09f53c8b7429b6c70482585bcc96db6033e169010d2ebf7a",
+      "size_bytes": 14114
     },
     {
       "path": "README.zh-CN.md",
-      "sha256": "16c97b6f34faaca882f3ddb1be4f7598c026e05dde73839f3415f90cbdbe8019",
+      "sha256": "e7e99f8174a59aeb7fe831ae01b1c7f90c459bff3643aab353ce805ad8626b1a",
       "size_bytes": 8957
     },
     {
@@ -144,8 +154,8 @@
     },
     {
       "path": "RELEASE-NOTES.md",
-      "sha256": "c6a5dc1e782f581913f3227366fa7ffd1c8a13f4bd3a0060abd97a45cdc4ba3c",
-      "size_bytes": 5431
+      "sha256": "8bdde9a0afb258e74d2677fe4991aea41b6188690660aa547a56ff924fcdb83f",
+      "size_bytes": 6909
     },
     {
       "path": "scripts/analyze_contributions.py",
@@ -179,7 +189,7 @@
     },
     {
       "path": "scripts/install_tools.py",
-      "sha256": "c856b76eaee92e79d0e265b79685c896ed61a6240cfba7e81165ea834d513fb8",
+      "sha256": "bd07365203d496932f77f25513407288004da5490129969a3cc28a8af38ff1f8",
       "size_bytes": 2229
     },
     {
@@ -188,19 +198,24 @@
       "size_bytes": 10297
     },
     {
+      "path": "scripts/recognition_boost_adapter.py",
+      "sha256": "33351a0e94b732220315ebcd37576495b943a777fc179c65207d479a32c95573",
+      "size_bytes": 3156
+    },
+    {
       "path": "scripts/render_reports.py",
       "sha256": "cc1cac4a298910a18475018a5fb1000ee580a4d8e78f5458671d2349117fe521",
       "size_bytes": 9450
     },
     {
       "path": "scripts/run.py",
-      "sha256": "cfebb2be3a52a2935edc42173891922d3ccfad1e5312f81b1c545db32c0cb1c7",
-      "size_bytes": 10341
+      "sha256": "d840af0f0bf913b79f5e7300940dd07684ddf46b393f6184369f139a25da82d5",
+      "size_bytes": 10572
     },
     {
       "path": "scripts/scan_images.py",
-      "sha256": "4a2485eab08a5f3fc7120cc4b2837b1e8d209d9a0c5cf89e17fa6737d1ea8862",
-      "size_bytes": 30059
+      "sha256": "d6fd6fa43a94e1c4e9485630000ade3084f58c46f3805f518f2a72e2a978b253",
+      "size_bytes": 30581
     },
     {
       "path": "scripts/validate_evidence.py",
@@ -209,8 +224,8 @@
     },
     {
       "path": "scripts/validate_skill_package.py",
-      "sha256": "a824aa719c61504527fe549d16c8de7f637a56135d25567af8fb82344869042d",
-      "size_bytes": 1925
+      "sha256": "536c9f7ca1ed3a3f68073ca5bc16e6ab41626fabee95051139185348a05a3b0f",
+      "size_bytes": 2080
     },
     {
       "path": "SECURITY.md",
@@ -219,8 +234,8 @@
     },
     {
       "path": "SKILL.md",
-      "sha256": "2d314606ecafb79c9bb0d15b0c9a067dec123e4a51c0238bd1c62f306f39b399",
-      "size_bytes": 21748
+      "sha256": "9c34dc1e592dd8b7386d75d23f8316fc715b0a23a5878d1b3c6554c981df0c91",
+      "size_bytes": 23356
     },
     {
       "path": "tests/test_contribution_certification.py",
@@ -236,6 +251,11 @@
       "path": "tests/test_external_cli_adapter.py",
       "sha256": "ae2de6a353a0d86e074f9df270c8911419ecccbd8890dae7625122e640c9eb04",
       "size_bytes": 5968
+    },
+    {
+      "path": "tests/test_recognition_boost.py",
+      "sha256": "08935051ad70eda8e11ef29c7693cc7d3f6b0d5b6abe426b6427dfdb60a0fb21",
+      "size_bytes": 5425
     },
     {
       "path": "tests/test_runtime_source_file.py",

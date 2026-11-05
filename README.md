@@ -153,3 +153,13 @@ python scripts/run.py scan --input-root "D:\\images" --report-root "D:\\reports"
 The default is **one worker**. The bounded thread pool processes independent images, but emits evidence in a stable input order via one writer. Extra workers do not necessarily run faster: first verify native decoder/adapter thread safety and compare 1, 2, 4 and 8 workers on the same image hashes and software versions. A changed source file blocks a trustworthy run (`BLOCKED_SOURCE_CHANGED`). Scan mode may stop early; complete contribution experiments must not.
 
 See [optimization and acceptance protocol](docs/scanning-optimization.md). These changes do not claim improved QR decoding coverage or full V01–V28 native implementation.
+
+## Opt-in QR recognition boost experiments (v1.4.0)
+
+The original V01–V28 registry and default scan behavior are unchanged. B01–B05 are an **independent, explicitly selected OpenCV reference experiment**, not an attestation that any native V strategy has been implemented or replaced. B01 keeps the original pixels; B02 adds quiet-zone padding after nearest-neighbor upscaling; B03 applies Otsu binarization; B04 CLAHE plus Otsu; B05 adaptive Gaussian binarization. Padding can help when only the quiet zone is missing, but never recovers physically cropped QR data modules.
+
+```powershell
+python scripts/run.py scan --input-root "D:\\samples" --report-root "D:\\reports" --decoder opencv --workers 1 --registry-path assets/strategy-registry.boost.json --adapter-module recognition_boost_adapter
+```
+
+Use a frozen SHA-256 input set, stable decoder/options, original raw scans, and independent labeled ground truth before claiming increased **correct** file/pair coverage. The included synthetic QR tests check complete decoded payloads, but **no real historical image dataset has been rescanned**. For full contribution analysis use `--experiment-mode contribution` and the same opt-in registry. See [recognition boost protocol](docs/recognition-boost.md).

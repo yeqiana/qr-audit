@@ -37,6 +37,8 @@ def main():
         command.add_argument("--max-pixels", type=int, default=50000000)
         command.add_argument("--workers", type=int, default=1,
                              help="1-8 image threads; benchmark before raising the default")
+        command.add_argument("--registry-path",
+                             help="optional isolated strategy registry; defaults to original V01-V28")
         command.add_argument("--source-root", help="all 模式只读检索源码候选位置")
 
     audit = sub.add_parser("audit", help="源码候选审计（关键词命中不是实现确认）")
@@ -119,6 +121,7 @@ def main():
             args.input_root, args.report_root, args.workspace_root, args.decoder,
             args.max_pixels, args.left_name, args.right_name,
             args.experiment_mode, args.adapter_module, workers=args.workers,
+            registry_path=args.registry_path,
         )
         evidence = Path(run_result["evidence"])
         manifest = _load_json(evidence / "run-manifest.json")
@@ -126,6 +129,7 @@ def main():
         inventory = _load_json(evidence / "inventory.json")
         inventory_after = _load_json(evidence / "inventory-after.json")
         registry = _load_json(
+            args.registry_path or
             Path(__file__).resolve().parents[1] / "assets" / "strategy-registry.initial.json"
         )
         check = validate(

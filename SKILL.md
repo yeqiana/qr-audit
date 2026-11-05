@@ -272,3 +272,15 @@ python "$skill\scripts\run.py" contribution --manifest "<manifest.json>" --attem
 ```
 
 `scan` 依赖当前机器已有的 `opencv-python` 与 `numpy`；若没有，停止并提示依赖缺失，不静默安装。`audit`/贡献度统计/HTML 渲染核心部分使用 Python 标准库。
+
+## 真实识别率提升：独立实验策略（v1.4）
+
+**核心目标是新增正确解码文件/有效配对，而非增加预处理策略数量。** `assets/strategy-registry.initial.json` 中 V01–V28 保持原样。由于另一台机器的真实预处理实现不在本仓库内，新增的 B01–B05 是**独立参考实验**，不能用 B 策略的结果冒充 V 策略的完成接线、独占贡献或原业务识别率提升。
+
+- `--registry-path assets/strategy-registry.boost.json --adapter-module recognition_boost_adapter` 显式启用 B 系列；默认扫描仍采用 V01–V28，不会自动混用。
+- B01 为原图；B02 最近邻放大与补白色静区；B03 Otsu 二值化与补静区；B04 CLAHE+Otsu；B05 高斯自适应阈值。按实际图像尺寸和像素预算限制输出；算法使用已经安装的本地 OpenCV/NumPy，不联网安装。
+- 优先验证 G5 裁剪和 G2 亮度攻击：仅当二维码主体仍可恢复时补静区/局部二值化可能有帮助。缺失的模块无法凭空恢复。
+- 对**完全相同 SHA-256 输入集**，分别运行默认基线和 B 实验。必须比较**真实人工正确答案**、新增正确解码文件/配对、候选丢失、错误载荷、异常、耗时、资源；无真值只能称“新增离线解码覆盖”，不能称准确率提高。
+- 先使用 `scan --workers 1` 做小批验证，策略调优与并发调优分开；全量贡献度需 `--experiment-mode contribution` 无早停并通过来源/矩阵验证，绝不能从普通早停扫描推导独占删除损失。
+
+详情见 `docs/recognition-boost.md`。

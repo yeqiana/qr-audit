@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0",
+  "registry_id": "qr-audit.boost-reference-v1",
+  "description": "Independent opt-in OpenCV reference experiments B01-B05; original V01-V28 untouched.",
+  "policy": {
+    "automatic_deletion_allowed": false,
+    "not_native_v_strategy": true,
+    "requires_opt_in": true
+  },
+  "strategies": [
+    {
+      "strategy_id": "B01",
+      "order": 1,
+      "name_zh": "原图",
+      "family": "baseline",
+      "tags": [
+        "EXPERIMENTAL",
+        "REFERENCE_OPENCV"
+      ],
+      "parameters": {
+        "operation": "identity",
+        "scale": 1,
+        "white_border_pixels": 0,
+        "max_output_pixels": null
+      },
+      "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
+      "runtime_confirmed": false,
+      "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy."
+    },
+    {
+      "strategy_id": "B02",
+      "order": 2,
+      "name_zh": "放大4倍 + 补白色静区",
+      "family": "quiet_zone",
+      "tags": [
+        "EXPERIMENTAL",
+        "REFERENCE_OPENCV"
+      ],
+      "parameters": {
+        "operation": "quiet_zone",
+        "scale": 4,
+        "white_border_pixels": 16,
+        "max_output_pixels": 8000000
+      },
+      "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
+      "runtime_confirmed": false,
+      "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy."
+    },
+    {
+      "strategy_id": "B03",
+      "order": 3,
+      "name_zh": "Otsu二值化 + 放大4倍 + 补静区",
+      "family": "threshold",
+      "tags": [
+        "EXPERIMENTAL",
+        "REFERENCE_OPENCV"
+      ],
+      "parameters": {
+        "operation": "otsu",
+        "scale": 4,
+        "white_border_pixels": 16,
+        "max_output_pixels": 8000000
+      },
+      "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
+      "runtime_confirmed": false,
+      "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy."
+    },
+    {
+      "strategy_id": "B04",
+      "order": 4,
+      "name_zh": "CLAHE局部对比度 + Otsu + 放大4倍 + 补静区",
+      "family": "illumination",
+      "tags": [
+        "EXPERIMENTAL",
+        "REFERENCE_OPENCV"
+      ],
+      "parameters": {
+        "operation": "clahe_otsu",
+        "scale": 4,
+        "white_border_pixels": 16,
+        "max_output_pixels": 8000000
+      },
+      "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
+      "runtime_confirmed": false,
+      "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy."
+    },
+    {
+      "strategy_id": "B05",
+      "order": 5,
+      "name_zh": "高斯自适应阈值 + 放大4倍 + 补静区",
+      "family": "illumination",
+      "tags": [
+        "EXPERIMENTAL",
+        "REFERENCE_OPENCV"
+      ],
+      "parameters": {
+        "operation": "adaptive",
+        "scale": 4,
+        "white_border_pixels": 16,
+        "max_output_pixels": 8000000
+      },
+      "implementation_status": "REFERENCE_EXPERIMENT_ONLY",
+      "runtime_confirmed": false,
+      "notes": "Independent Bxx experiment. Not an equivalent implementation of any V01-V28 native preprocessing strategy."
+    }
+  ]
+}
