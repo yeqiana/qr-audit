@@ -519,8 +519,22 @@ def validate(manifest, attempts, registry=None, inventory=None, inventory_after=
                 errors.append(f"contribution logical combination failed without successful retry: {cell}")
             if "SKIPPED_INELIGIBLE" in statuses:
                 reasons = [str(x.get("skip_reason", "")) for x in rows if x.get("status") == "SKIPPED_INELIGIBLE"]
-                if any(reason.startswith(("NOT_IMPLEMENTED", "DECODER_UNAVAILABLE", "DEPENDENCY_MISSING")) for reason in reasons):
-                    errors.append(f"unavailable implementation/dependency cannot be counted as ineligible: {cell}")
+                # Ineligibility describes the image, not a missing adapter feature.
+                # A capability gap must remain NOT_RUN and block full contribution.
+                adapter_gap_prefixes = (
+                    "NOT_IMPLEMENTED", "DECODER_UNAVAILABLE", "DEPENDENCY_MISSING",
+                    "ADAPTER_", "PURE_OPTION_NOT_SUPPORTED",
+                    "OPTION_NOT_SUPPORTED", "UNSUPPORTED_DECODER",
+                    "UNSUPPORTED_OPTION",
+                )
+                if any(
+                    reason.upper().startswith(adapter_gap_prefixes)
+                    or "NOT_SUPPORTED_BY_THIS_" in reason.upper()
+                    for reason in reasons
+                ):
+                    errors.append(
+                        f"unavailable implementation/dependency/adapter cannot be counted as ineligible: {cell}"
+                    )
                 if decoded or any(s in EXECUTED_STATUSES for s in statuses):
                     errors.append(f"contradictory ineligible and executed attempts: {cell}")
             decoded_sets = []

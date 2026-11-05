@@ -82,7 +82,8 @@ Allowed statuses: `DECODED`, `DETECTED_ONLY`, `NO_DECODE`, `ERROR`, `SKIPPED_EAR
 - `DECODED` requires at least one valid payload identity.
 - `ERROR` requires a non-empty `error`.
 - Any skipped or `NOT_RUN` status requires a non-empty `skip_reason`.
-- `NOT_IMPLEMENTED`, `DECODER_UNAVAILABLE` and missing dependencies are not valid ineligibility reasons.
+- `NOT_IMPLEMENTED`, `DECODER_UNAVAILABLE`, missing dependencies, unsupported decoder options and missing adapter capabilities are **not** valid image-ineligibility reasons. They must be recorded as `NOT_RUN`, making full contribution certification unavailable until the experiment scope is properly supported.
+- Direct contribution analysis independently revalidates the supplied manifest, attempts, inventory, registry and provenance. Passing a caller-supplied `validation` dictionary never grants certification; revalidation may repeat input/source hashing.
 - Contribution mode forbids early stop and requires one or more attempt records for every expected image × strategy × decoder logical combination. A cell may have retries.
 
 ## Input and source provenance

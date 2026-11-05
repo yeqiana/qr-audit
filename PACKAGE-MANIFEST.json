@@ -58,6 +58,11 @@
       "size_bytes": 1535
     },
     {
+      "path": "docs/local-runner-p0-acceptance.md",
+      "sha256": "2a325cb81e865b17d464a2145b38140b220a344f4b19524ef7cd89d3c1b67349",
+      "size_bytes": 6128
+    },
+    {
       "path": "docs/metrics.md",
       "sha256": "0a46914171c617b3f1fd4cab83bc86045f085f41c68af6b67da12cc3fe2764d6",
       "size_bytes": 3876
@@ -104,8 +109,8 @@
     },
     {
       "path": "references/evidence-contract.md",
-      "sha256": "80d6ad1e912e4ffda5d5154e26a5f01aea2ac5b25af731871f0d2c5e6bc22808",
-      "size_bytes": 6145
+      "sha256": "6ef8ec5eb0a78e52f2d38bee93a0b4b3b13054747d107145822ba0ee819b0202",
+      "size_bytes": 6601
     },
     {
       "path": "references/genui-html.md",
@@ -139,8 +144,8 @@
     },
     {
       "path": "scripts/analyze_contributions.py",
-      "sha256": "bb29b6af15d6f0a82e8e434acda07e73c1d019d1a6f7d6bf624331858c222e0d",
-      "size_bytes": 15357
+      "sha256": "f073fb23586e5d6652198607ce29fa2003427f55a4869a3c23ce3dd8b2091f52",
+      "size_bytes": 15651
     },
     {
       "path": "scripts/audit_source.py",
@@ -154,8 +159,8 @@
     },
     {
       "path": "scripts/evidence_contract.py",
-      "sha256": "becc5447368b18a7b6b613da69975e599d4881a9172406c42ca8745412b34f41",
-      "size_bytes": 27959
+      "sha256": "196cddc261f9a1553a29712d77df5836732a8361834424da1db28cf7ab41528c",
+      "size_bytes": 28582
     },
     {
       "path": "scripts/executor_registry.py",
@@ -199,8 +204,8 @@
     },
     {
       "path": "scripts/validate_skill_package.py",
-      "sha256": "ca1653b46e0a4a940a68b3ab536c8b5c4707cf143926dff8ded0f963515eab30",
-      "size_bytes": 1766
+      "sha256": "5392a2dda98185a00083aa46dd7b2426925b45bc33d55aa584fa7ded85e3979d",
+      "size_bytes": 1852
     },
     {
       "path": "SECURITY.md",
@@ -211,6 +216,11 @@
       "path": "SKILL.md",
       "sha256": "3eec1cc4f95ea3d8b65ab99cb8150132f65851f48048343dc94120edfdbb90a5",
       "size_bytes": 19806
+    },
+    {
+      "path": "tests/test_contribution_certification.py",
+      "sha256": "a8481ef6b126b5b842650266362b766211b1e512001537698b70f75d2aaaca30",
+      "size_bytes": 2675
     },
     {
       "path": "tests/test_evidence_hardening.py",

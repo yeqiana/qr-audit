@@ -12,6 +12,7 @@ REQUIRED = [
     "scripts/audit_source.py", "scripts/install_tools.py", "tests/test_tools.py",
     "tests/test_external_cli_adapter.py", "tests/test_runtime_source_file.py",
     "tests/test_evidence_hardening.py", "docs/real-scanner-onboarding.md",
+    "tests/test_contribution_certification.py", "docs/local-runner-p0-acceptance.md",
 ]
 
 

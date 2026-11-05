@@ -132,7 +132,11 @@ def _removal_rows(unit_type, scopes, success_by_strategy, order, strategies, com
 
 
 def analyze(manifest, attempts, registry, inventory=None, inventory_after=None, validation=None):
-    validation = validation or validate(
+    # A caller-supplied result is not proof that THESE inputs passed verification.
+    # Recheck before ever emitting certified exclusive/removal-loss metrics.
+    # This intentionally re-hashes sources and input files even if a CLI
+    # validated earlier: safety of the direct Python API takes precedence.
+    validation = validate(
         manifest, attempts, registry=registry, inventory=inventory,
         inventory_after=inventory_after,
     )
