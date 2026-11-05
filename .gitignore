@@ -11,3 +11,13 @@ reports/
 artifacts/
 *.log
 *.tmp
+
+# AI experiment assets are local-only; never commit private weights/datasets
+models/
+*.pt
+*.pth
+*.onnx
+*.ckpt
+*.safetensors
+*.engine
+local-ai-data/

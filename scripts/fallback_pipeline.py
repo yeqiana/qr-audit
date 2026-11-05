@@ -6,7 +6,7 @@ from collections import defaultdict
 from copy import deepcopy
 
 
-def compose_registry(original, boost, with_wechat):
+def compose_registry(original, boost, with_wechat, with_ai=False):
     """Append experimental B strategies after every existing native/reference ID."""
     result = deepcopy(original)
     existing = {row["strategy_id"] for row in result["strategies"]}
@@ -19,7 +19,9 @@ def compose_registry(original, boost, with_wechat):
             raise ValueError("FALLBACK_INVALID_STRATEGY: " + sid)
         existing.add(sid)
         added.append(deepcopy(row))
-    if not added or "B01" not in existing:
+    if boost["strategies"] and "B01" not in existing:
+        raise ValueError("FALLBACK_REQUIRES_B01")
+    if not added and not with_ai:
         raise ValueError("FALLBACK_REQUIRES_B01")
     if with_wechat:
         if "W01" in existing:
@@ -33,23 +35,38 @@ def compose_registry(original, boost, with_wechat):
             "implementation_status": "EXPERIMENT_ONLY",
             "notes": "Last resort, WeChatQRCode on unmodified input. Not mobile WeChat app.",
         })
+    if with_ai:
+        if "A01" in existing:
+            raise ValueError("FALLBACK_STRATEGY_COLLISION: A01")
+        added.append({
+            "strategy_id": "A01",
+            "order": len(result["strategies"]) + len(added) + 1,
+            "name_zh": "本地AI定位与多引擎解码兜底",
+            "family": "ai_detection_recovery",
+            "parameters": {"operation": "identity", "model_required": True},
+            "implementation_status": "EXPERIMENT_ONLY",
+            "notes": "Local YOLO detection, multi-candidate ROI, optional SR and real QR decoders.",
+        })
     result["strategies"].extend(added)
     result["fallback_composition"] = {
         "version": "1",
         "base_strategy_ids": [x["strategy_id"] for x in original["strategies"]],
         "boost_strategy_ids": [x["strategy_id"] for x in boost["strategies"]],
         "wechat_strategy_id": "W01" if with_wechat else None,
+        "ai_strategy_id": "A01" if with_ai else None,
     }
     return result
 
 
 def decoder_filters(base_strategy_ids, boost_strategy_ids, original_decoder_ids,
-                    effective_decoder_ids, with_wechat):
+                    effective_decoder_ids, with_wechat, with_ai=False):
     """Keep source-file/native adapters away from experimental pixel variants."""
     base, boost, old = set(base_strategy_ids), set(boost_strategy_ids), set(original_decoder_ids)
     allowed = {}
     for did in effective_decoder_ids:
-        if did == "wechat" and with_wechat:
+        if did == "ai" and with_ai:
+            allowed[did] = {"A01"} | (base if did in old else set())
+        elif did == "wechat" and with_wechat:
             # Use the independent detector on a small, deliberately selected
             # set of enhanced pixels as well as its last-resort raw W01.
             # If WeChat was already a baseline decoder, retain old calls.
@@ -74,6 +91,8 @@ def summarize(attempts, manifest):
     base = set(composition["base_strategy_ids"])
     boost = set(composition["boost_strategy_ids"])
     extras = boost | ({"W01"} if composition["wechat_strategy_id"] else set())
+    if composition.get("ai_strategy_id"):
+        extras.add(composition["ai_strategy_id"])
     base_success = set()
     fallback_success = set()
     strategy_rescues = defaultdict(set)

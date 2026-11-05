@@ -29,6 +29,10 @@ REQUIRED = [
     "scripts/fallback_pipeline.py", "tests/test_fallback_pipeline.py",
     "tests/test_geometry_recovery.py", "docs/recognition-recovery-v152.md",
     "docs/failure-fallback-usage.md",
+    "scripts/ai_recovery_core.py", "scripts/ai_qr_adapter.py",
+    "scripts/ai_pair_consensus.py", "assets/ai-recovery.example.json",
+    "tests/test_ai_qr_recovery.py", "tests/test_ai_pair_consensus.py",
+    "docs/ai-recovery-experiment.md",
 ]
 
 
@@ -47,7 +51,7 @@ def check():
     if any("qr-offline-scan-audit" in path.read_text(encoding="utf-8") for path in ROOT.rglob("*.md")):
         errors.append("残留旧 Skill 名称")
     manifest = json.loads((ROOT / "PACKAGE-MANIFEST.json").read_text(encoding="utf-8"))
-    if manifest.get("version") != "1.5.2":
+    if manifest.get("version") != "2.0.0-ai.1":
         errors.append("发布清单版本与当前 Skill 版本不匹配")
     listed = set()
     for entry in manifest.get("files", []):

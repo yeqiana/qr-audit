@@ -195,3 +195,9 @@ Original strategy definitions and ordering are left untouched. The effective com
 B02–B08 now select an output scale within the 8M-pixel cap (4x/3x/2x/1x, or area downsampling when even native size exceeds the budget). B09 is an independent opt-in OpenCV QR quadrilateral rectification experiment, with a post-warp quiet zone; it is **not** an equivalent native Vxx implementation and presently processes the largest candidate only. When `--wechat-fallback` is enabled and model weights are available locally, the offline WeChat decoder receives selected B02/B04/B06/B08/B09 variants before the final raw W01 attempt. The default no-fallback path is unchanged.
 
 The fallback summary now additionally separates rescues by decoder and by strategy/decoder. These are **observed decoding coverage**, not validated payload correctness. Real-image improvement against the historical 431-file/409-pair baseline still requires locally executed zero-regression evidence. See `docs/recognition-recovery-v152.md`.
+
+## Experimental AI recovery branch (v2.0.0-ai.1; not released on main)
+
+The independent `experiment/qr-ai-recovery-v2` branch builds on v1.5.2 and adds an **explicit opt-in** `--ai-fallback` after the established decoder order: local QR-specialized YOLO detection, multi-candidate crops/warps, QR module-grid hypotheses and independent OpenCV/ZXing/ZBar decoding. Optional ONNX image super-resolution has a strict RGB NCHW float32 interface. Models and original user images are never included, uploaded or automatically fetched; the AI detector does not generate QR text. Real sample accuracy has **not been measured**.
+
+Details, model provenance, license considerations, commands and acceptance: `docs/ai-recovery-experiment.md`. This experimental branch is deliberately not merged into stable `main`.

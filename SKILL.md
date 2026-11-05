@@ -324,3 +324,9 @@ python "$skill\scripts\run.py" contribution --manifest "<manifest.json>" --attem
 - **B09**：使用 OpenCV detectMulti/detect 查找二维码四角，选择面积最大的有效定位框，做单码透视校正并在变换后补白边，最多约 8M 像素。无有效候选时有界全图兜底；不具备任意多个二维码候选的全部解析能力。
 - **微信离线模型**：`--boost-fallback --wechat-fallback` 可在 B02/B04/B06/B08/B09 上尝试 WeChatQRCode，并保留 W01 最后原图尝试；不支持无本地模型运行。手机微信 App 人工扫码效果不等同这个模块。
 - **证据**：`evidence/fallback-summary.json` 增加 rescue_by_decoder、rescue_by_strategy_decoder 观测指标。不可据此声称载荷正确，必须配合历史同输入零回退与人工真值。默认不开启增强，V/R 原注册表和顺序不变。参见 `docs/recognition-recovery-v152.md`。
+
+## v2.0.0-ai.1（独立实验分支，不属于正式主线）
+
+只在 `experiment/qr-ai-recovery-v2` 分支开启本地 `--ai-fallback --ai-model-config /path/ai.json`，在原V/R与已有B/W增强都失败时才运行 A01（本地 YOLO 专用二维码候选检测→多候选裁剪/角点透视修正→模块网格重建假设→OpenCV/ZXing/ZBar解码，另有可选 ONNX RGB超分）。不能把普通通用YOLO权重当作二维码检测器，更不能用AI生成载荷替代真正解码。
+
+本版权重文件不随GitHub仓库分发、不会自动下载、也不会上传图像；依赖缺失或本地权重加载失败时拒绝开始。具体启用、模型/许可证约束、历史零回退和配对分析见 `docs/ai-recovery-experiment.md`。**合成模型测试不能证明 2560 张真实图识别率提升**。
