@@ -115,8 +115,8 @@ class FallbackImageTests(unittest.TestCase):
             effective = json.loads((evidence / "strategy-registry.effective.json").read_text(encoding="utf-8"))
             self.assertEqual([x["strategy_id"] for x in effective["strategies"][:28]],
                              [f"V{i:02d}" for i in range(1, 29)])
-            self.assertEqual([x["strategy_id"] for x in effective["strategies"][-8:]],
-                             [f"B{i:02d}" for i in range(1, 9)])
+            self.assertEqual([x["strategy_id"] for x in effective["strategies"][-9:]],
+                             [f"B{i:02d}" for i in range(1, 10)])
             self.assertEqual(manifest["fallback_composition"]["base_strategy_ids"],
                              [f"V{i:02d}" for i in range(1, 29)])
             self.assertEqual(summary["baseline_success_images"], 0)

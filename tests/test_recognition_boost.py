@@ -27,7 +27,7 @@ class RecognitionBoostTests(unittest.TestCase):
         )
         self.assertEqual(
             [item["strategy_id"] for item in boost["strategies"]],
-            ["B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08"],
+            ["B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B09"],
         )
         self.assertTrue(boost["policy"]["requires_opt_in"])
 
@@ -112,8 +112,8 @@ class RecognitionBoostTests(unittest.TestCase):
                     encoding="utf-8"
                 ).splitlines()
             ]
-            self.assertEqual(manifest["strategy_order"], ["B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08"])
-            self.assertEqual(len(attempts), 8)
+            self.assertEqual(manifest["strategy_order"], ["B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B09"])
+            self.assertEqual(len(attempts), 9)
             self.assertTrue(any(r["status"] == "DECODED" for r in attempts))
             inventory = json.loads((evidence / "inventory.json").read_text(encoding="utf-8"))
             after = json.loads((evidence / "inventory-after.json").read_text(encoding="utf-8"))

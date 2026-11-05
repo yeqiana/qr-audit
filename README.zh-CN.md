@@ -1,7 +1,7 @@
 # QR Audit — 离线二维码扫描与策略审计 Skill
 
 **Skill 名称：** `qr-audit`  
-**版本：** `1.5.1`
+**版本：** `1.5.2`
 **用途：** 二维码离线批量扫描、扫描器源码审计、策略贡献度实验，以及 Markdown + 静态离线 HTML 报告交付。
 
 ## 能做什么
@@ -106,7 +106,7 @@ python "$skill\scripts\run.py" scan --input-root "$input" --report-root "$report
 # 只读源码审计候选（不能以关键词命中代替人工核对）
 python "$skill\scripts\run.py" audit --source-root (Join-Path $project 'qr-tools') --output (Join-Path $reports 'audit-hints.json')
 
-# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.5.1
+# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.5.2
 python "$skill\scripts\install_tools.py" --workspace "$project"
 ```
 
@@ -186,3 +186,11 @@ python scripts/run.py scan --input-root "D:\\images" --report-root "D:\\reports"
 原注册表始终不修改，完整实际注册表保存 `evidence/strategy-registry.effective.json`；本轮新增观测成功汇总保存 `evidence/fallback-summary.json`，详细说明与本地命令见 [失败兜底正式接线说明](docs/failure-fallback-usage.md)。
 
 注意：**必须传入你真实使用的旧扫描器配置、适配器、解码器和历史基线**。如果使用默认参考 V01–V03，即使组合增强能扫出图片，也不能把它当成原原生扫描器的升级证据。当前仍未在你的真实 2560 张数据上重新测量正确成功率。
+
+## v1.5.2：大图、自适应缩放、定位框重建、微信增强图
+
+- B02–B08 改为按像素预算选择 4/3/2/1 倍放大；原图本身超过输出预算时按面积插值缩小，不再因为 700×700、2000×2000 等图像直接报固定 4 倍输出超限。缩小可能损失二维码模块信息，原图和旧策略仍优先。
+- 新增 B09：OpenCV 定位出二维码四角后，对最大候选进行透视矫正和自适应静区修复；无法定位时保留有界全图兜底。
+- WeChatQRCode 可选择读取 B02/B04/B06/B08/B09 的预处理图片，以及最终 W01 原图；不再仅有 W01 原图路径。必须启用 `--boost-fallback --wechat-fallback` 并事先准备本地模型。
+- 汇总额外输出按解码器、策略+解码器拆分的观测新增图片数。`OBSERVED_UNVERIFIED` 不代表人工正确载荷或真实微信扫码成功。
+- 详细测试、限制及验收步骤参见 [v1.5.2 识别恢复评审与测试](docs/recognition-recovery-v152.md)。
