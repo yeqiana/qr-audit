@@ -6,10 +6,12 @@ import shutil
 import sys
 from pathlib import Path
 
-VERSION='1.5.2'
+VERSION='2.0.0-ai.1'
 SCRIPTS=['run.py','inventory_images.py','scan_images.py','executor_registry.py','evidence_contract.py',
-         'build_report_models.py','render_reports.py','analyze_contributions.py','validate_evidence.py','audit_source.py','external_cli_adapter.py','recognition_boost_adapter.py','regression_gate.py','native_coverage_audit.py','wechat_decoder_adapter.py','fallback_pipeline.py']
-ASSETS=['strategy-registry.initial.json','strategy-registry.boost.json']
+         'build_report_models.py','render_reports.py','analyze_contributions.py','validate_evidence.py','audit_source.py','external_cli_adapter.py','recognition_boost_adapter.py','regression_gate.py','native_coverage_audit.py','wechat_decoder_adapter.py','fallback_pipeline.py',
+         'ai_recovery_core.py','ai_qr_adapter.py','ai_pair_consensus.py']
+ASSETS=['strategy-registry.initial.json','strategy-registry.boost.json',
+        'ai-recovery.example.json']
 
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
@@ -36,7 +38,7 @@ def install(workspace):
     return {'status':'INSTALLED','path':str(target),'files':len(hashes)}
 
 def main():
-    p=argparse.ArgumentParser(description='将 qr-audit 辅助工具安装到业务工作区的 qr-tools/qr-audit-v1.5.2/')
+    p=argparse.ArgumentParser(description='将 qr-audit 辅助工具安装到业务工作区的 qr-tools/qr-audit-v2.0.0-ai.1/')
     p.add_argument('--workspace',required=True);a=p.parse_args()
     try:print(json.dumps(install(a.workspace),ensure_ascii=False));return 0
     except Exception as exc:print(json.dumps({'status':'ERROR','error':str(exc)},ensure_ascii=False),file=sys.stderr);return 2

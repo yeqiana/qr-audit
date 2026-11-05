@@ -50,6 +50,10 @@ def main():
                              help="run B01-B08 only if existing strategies fail")
         command.add_argument("--wechat-fallback", action="store_true",
                              help="last-resort W01; requires boost and local WeChat models")
+        command.add_argument("--ai-fallback", action="store_true",
+                             help="optional local AI detector + multiple QR decoders")
+        command.add_argument("--ai-model-config",
+                             help="existing local AI config JSON; models never downloaded")
         command.add_argument("--source-root", help="all 模式只读检索源码候选位置")
 
     audit = sub.add_parser("audit", help="源码候选审计（关键词命中不是实现确认）")
@@ -138,6 +142,8 @@ def main():
             require_upgrade_gate=args.require_upgrade_gate,
             boost_fallback=args.boost_fallback,
             wechat_fallback=args.wechat_fallback,
+            ai_fallback=args.ai_fallback,
+            ai_model_config=args.ai_model_config,
         )
         evidence = Path(run_result["evidence"])
         manifest = _load_json(evidence / "run-manifest.json")

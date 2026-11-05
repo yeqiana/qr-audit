@@ -1,21 +1,26 @@
 {
   "name": "qr-audit",
-  "version": "1.5.2",
+  "version": "2.0.0-ai.1",
   "files": [
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "17561c7f935d99e0cd6f775ff2e8138c577e75ff7a02e9200b585b6e973e81c9",
-      "size_bytes": 1271
+      "sha256": "4b535afc12623c3484398df7e5abf5a57f0fd16560e60d2204c1e36b6f1e6ac6",
+      "size_bytes": 1338
     },
     {
       "path": ".gitignore",
-      "sha256": "f39be2725a6b363c5e6cda6908356c81ec03e469cd2b8d27326e79b42c574300",
-      "size_bytes": 117
+      "sha256": "a1649cd3e901d16c15a7e911b13c2fcbbe21c5f0d6a9a1229474ff0c7ab3586f",
+      "size_bytes": 266
     },
     {
       "path": "agents/openai.yaml",
       "sha256": "4d6c6605afbba2b4d4d7326687ef1c4a17372f72a3373fcbc70504cec4bf6ac9",
       "size_bytes": 495
+    },
+    {
+      "path": "assets/ai-recovery.example.json",
+      "sha256": "98e6204b9e0f34771d676006844c72d80ba81b49c7d0a43a414b19da45daafaf",
+      "size_bytes": 304
     },
     {
       "path": "assets/examples/report-model.example.json",
@@ -36,6 +41,11 @@
       "path": "CONTRIBUTING.md",
       "sha256": "4e4382df8139d3f8203a98aad36131143b6ce63f78633b9baa471c253c561ab6",
       "size_bytes": 1132
+    },
+    {
+      "path": "docs/ai-recovery-experiment.md",
+      "sha256": "dce4a60f66ef6284876ef303bebd0062fbc25986b6f13613083be2640621cce0",
+      "size_bytes": 6920
     },
     {
       "path": "docs/architecture.md",
@@ -139,13 +149,13 @@
     },
     {
       "path": "README.md",
-      "sha256": "9f42fe3607b8577e018fbb9fc5bd4dce2af7a809503eeefd8a37219ec7c6ddd8",
-      "size_bytes": 18992
+      "sha256": "f02a0c92c07530507b33033d970e132c581066aae32ac25185781db5f4738ff9",
+      "size_bytes": 19796
     },
     {
       "path": "README.zh-CN.md",
-      "sha256": "b26cd99efcd2314f9ed3f177a5c7fa271f8e94276ce69c0b52ff6572736ec6a6",
-      "size_bytes": 13397
+      "sha256": "265666813929581f25d918ea16c5d26e61d0b46e8de98d9f3fb882c75e792ce0",
+      "size_bytes": 14197
     },
     {
       "path": "references/adapter-contract.md",
@@ -184,8 +194,23 @@
     },
     {
       "path": "RELEASE-NOTES.md",
-      "sha256": "6e623632ecfb4ec1b46ca87680e281d76553ad1858eec9e0b2d08be1462438d5",
-      "size_bytes": 12400
+      "sha256": "80d3365f38c58fb6930ac4d535f695b543790748ac33a3b51f3b06db92cb4669",
+      "size_bytes": 13348
+    },
+    {
+      "path": "scripts/ai_pair_consensus.py",
+      "sha256": "ee24657d828b9732b62707c30c1fcfa491ce45525e5fe8f6bf31ec19fe28a618",
+      "size_bytes": 3733
+    },
+    {
+      "path": "scripts/ai_qr_adapter.py",
+      "sha256": "34ab15f4e9c4e018a71e77e6b892800acccf7dc33498929eff1dd06036c3c15a",
+      "size_bytes": 8231
+    },
+    {
+      "path": "scripts/ai_recovery_core.py",
+      "sha256": "3bc8336d2c261e3cc8cb4fa9a585577bebe01ee9c5c2055e9f15452102da7f00",
+      "size_bytes": 11659
     },
     {
       "path": "scripts/analyze_contributions.py",
@@ -219,13 +244,13 @@
     },
     {
       "path": "scripts/fallback_pipeline.py",
-      "sha256": "927e20082b91b9183acf8e0f47a01015a674f9c8a2331d6edb1284c3840a97f3",
-      "size_bytes": 5727
+      "sha256": "3ef3c8ae8914bc9c869a882f4c71aa0d27e13a1b92acf2354a43c3e7c9f5c25c",
+      "size_bytes": 6695
     },
     {
       "path": "scripts/install_tools.py",
-      "sha256": "332b3e046e6c8be7de0a767e9f4bd90c408b9ab0e34ee90507c26ad83ddd465a",
-      "size_bytes": 2390
+      "sha256": "8c5cfb766f86be5f57f291e89a6952380b6838844a825d4dd43d607c7f505c96",
+      "size_bytes": 2510
     },
     {
       "path": "scripts/inventory_images.py",
@@ -254,13 +279,13 @@
     },
     {
       "path": "scripts/run.py",
-      "sha256": "964bf3730c08a125441a4425e5cc4edb4c0a3d0b5b30b2298bed6ed664be9bbc",
-      "size_bytes": 11731
+      "sha256": "85e595b923bb668e2f90bb21608d13fb22a43e4922ad072bf37cf91e1023dce2",
+      "size_bytes": 12119
     },
     {
       "path": "scripts/scan_images.py",
-      "sha256": "0be4e0acde5c2f4c205ce8d3a1efb0b9b123c8176ba99d8855d17fe454c40ee9",
-      "size_bytes": 38247
+      "sha256": "2ab5c35cf166d74002babd8df395250ed85d77e783cbadb0590e730d9906bb0c",
+      "size_bytes": 39435
     },
     {
       "path": "scripts/validate_evidence.py",
@@ -269,8 +294,8 @@
     },
     {
       "path": "scripts/validate_skill_package.py",
-      "sha256": "97aeb4c74a0859e2c09125da1f6d8d255aa58bcf1420b95df4eab5c5be1ed6b0",
-      "size_bytes": 3802
+      "sha256": "8046c3e97beb8fcd31f4af8f6affadd6ec512105400ff42908a323d9765527b6",
+      "size_bytes": 4050
     },
     {
       "path": "scripts/wechat_decoder_adapter.py",
@@ -284,8 +309,18 @@
     },
     {
       "path": "SKILL.md",
-      "sha256": "92452c577027b8cb6e2b3f3bf675fddf88336682bb8e1c4cfb7787c50a47e924",
-      "size_bytes": 29642
+      "sha256": "8f18b60cc35ef05cf74357c0e1c994f20aa888457f536d43bb72227d17a02ea4",
+      "size_bytes": 30468
+    },
+    {
+      "path": "tests/test_ai_pair_consensus.py",
+      "sha256": "3c66257837f9d6ef142717d50e39ef2a25328f8fd6b6675571b004bfd6de2ab4",
+      "size_bytes": 1470
+    },
+    {
+      "path": "tests/test_ai_qr_recovery.py",
+      "sha256": "0f3f414e0404ac3df3a9ba7f295a89eaecb78973ecc992f139c3b348eda4b1cd",
+      "size_bytes": 9038
     },
     {
       "path": "tests/test_brightness_boost.py",

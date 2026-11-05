@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "detector": {
+    "provider": "ultralytics",
+    "weights": "models/qr-specialized-detector.pt",
+    "confidence": 0.2,
+    "max_candidates": 8,
+    "device": "cpu"
+  },
+  "max_attempts": 180,
+  "budget_seconds": 30,
+  "grid_versions": 7,
+  "zbar": true,
+  "zxing": true
+}

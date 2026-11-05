@@ -1,7 +1,7 @@
 # QR Audit — 离线二维码扫描与策略审计 Skill
 
 **Skill 名称：** `qr-audit`  
-**版本：** `1.5.2`
+**版本：** `2.0.0-ai.1（实验分支，非主线发布）`
 **用途：** 二维码离线批量扫描、扫描器源码审计、策略贡献度实验，以及 Markdown + 静态离线 HTML 报告交付。
 
 ## 能做什么
@@ -194,3 +194,9 @@ python scripts/run.py scan --input-root "D:\\images" --report-root "D:\\reports"
 - WeChatQRCode 可选择读取 B02/B04/B06/B08/B09 的预处理图片，以及最终 W01 原图；不再仅有 W01 原图路径。必须启用 `--boost-fallback --wechat-fallback` 并事先准备本地模型。
 - 汇总额外输出按解码器、策略+解码器拆分的观测新增图片数。`OBSERVED_UNVERIFIED` 不代表人工正确载荷或真实微信扫码成功。
 - 详细测试、限制及验收步骤参见 [v1.5.2 识别恢复评审与测试](docs/recognition-recovery-v152.md)。
+
+## 🧪 v2.0.0-ai.1：独立AI识别实验分支
+
+此版本从稳定 v1.5.2 的 `ee834706` 分叉，不合入 `main`。新增 `--ai-fallback`：仅在已有扫描方法失败后，使用本地专用YOLO检测二维码区域，候选ROI校正、QR模块网格假设、OpenCV/ZXing-C++/ZBar多解码器验证，允许可选 ONNX 超分辨率模型。所有权重必须预先放本机并显式指定，无云端图片上传/自动模型下载。实验贡献单独统计，历史正确解码零回退；配对推断另行审计，不能冒充真实解码。
+
+完整使用方法与限制：[AI 识别实验](docs/ai-recovery-experiment.md)。注意 Ultralytics/QRDet 权重相关 AGPL-3.0/商用许可，不应未经审核直接把 AI 依赖纳入正式主线。

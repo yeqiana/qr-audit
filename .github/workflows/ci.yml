@@ -36,3 +36,4 @@ jobs:
           python -m unittest discover -s tests -p 'test_*boost.py' -v
           python -m unittest discover -s tests -p 'test_fallback_pipeline.py' -v
           python -m unittest discover -s tests -p 'test_geometry_recovery.py' -v
+          python -m unittest discover -s tests -p 'test_ai_*py' -v

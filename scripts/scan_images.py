@@ -70,6 +70,7 @@ def source_fingerprint(workspace_root, registry_path, adapter_modules, extra_sou
         Path(__file__).with_name("analyze_contributions.py").resolve(),
         Path(__file__).with_name("regression_gate.py").resolve(),
         Path(__file__).with_name("fallback_pipeline.py").resolve(),
+        Path(__file__).with_name("ai_recovery_core.py").resolve(),
         Path(__file__).with_name("build_report_models.py").resolve(),
         Path(__file__).with_name("render_reports.py").resolve(),
         Path(__file__).with_name("run.py").resolve(),
@@ -393,7 +394,8 @@ def execute_image_matrix(run_id, image_meta, strategy_order, strategy_executors,
                     if isinstance(raw_result, dict):
                         for field in (
                             "native_strategy_id", "native_decoder_id",
-                            "native_scanner_version", "bridge_config_sha256"
+                            "native_scanner_version", "bridge_config_sha256",
+                            "ai_detector_candidates", "ai_decode_calls", "ai_engine_hits",
                         ):
                             if field in raw_result:
                                 record[field] = raw_result[field]
@@ -467,7 +469,7 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
              mode="scan", adapter_modules=None, workers=1, registry_path=None,
              required_strategies=None, baseline_evidence=None,
              require_upgrade_gate=False, boost_fallback=False,
-             wechat_fallback=False):
+             wechat_fallback=False, ai_fallback=False, ai_model_config=None):
     input_root = Path(input_root).expanduser().resolve()
     report_root = Path(report_root).expanduser().resolve()
     workspace_root = Path(workspace_root).expanduser().resolve() if workspace_root else input_root.parent
@@ -518,6 +520,7 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
         )
     context = {
         "cv2": cv2, "numpy": np, "input_root": str(input_root), "mode": mode,
+        "ai_config_path": ai_model_config,
         "source_files": [], "dependencies": [],
         "require_image_dependencies": True,
     }
@@ -529,6 +532,8 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
             selected_adapters.append("recognition_boost_adapter")
     if wechat_fallback and "wechat_decoder_adapter" not in selected_adapters:
         selected_adapters.append("wechat_decoder_adapter")
+    if ai_fallback and "ai_qr_adapter" not in selected_adapters:
+        selected_adapters.append("ai_qr_adapter")
     loaded_adapters = load_adapter_modules(
         selected_adapters, strategy_executors, decoder_executors, context
     )
@@ -540,6 +545,12 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
             registered = decoder_executors.get(decoder_id)
             if registered is not None and registered.available and decoder_id not in requested_decoders:
                 requested_decoders.append(decoder_id)
+    if ai_fallback:
+        ai_decoder = decoder_executors.get("ai")
+        if ai_decoder is None or not ai_decoder.available:
+            raise ValueError("AI_FALLBACK_UNAVAILABLE")
+        if "ai" not in requested_decoders:
+            requested_decoders.append("ai")
     if wechat_fallback:
         wechat = decoder_executors.get("wechat")
         if wechat is None or not wechat.available:
@@ -560,13 +571,17 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
     base_strategy_ids = [row["strategy_id"] for row in registry.get("strategies", [])]
     filters = None
-    if boost_fallback:
+    if boost_fallback or ai_fallback:
         boost_registry_path = Path(__file__).resolve().parents[1] / "assets" / "strategy-registry.boost.json"
-        if not boost_registry_path.is_file():
+        if boost_fallback and not boost_registry_path.is_file():
             raise ValueError("FALLBACK_REGISTRY_NOT_FOUND")
-        boost_registry = json.loads(boost_registry_path.read_text(encoding="utf-8"))
-        context["source_files"].append(str(boost_registry_path))
-        registry = compose_registry(registry, boost_registry, wechat_fallback)
+        boost_registry = (
+            json.loads(boost_registry_path.read_text(encoding="utf-8"))
+            if boost_fallback else {"strategies": []}
+        )
+        if boost_fallback:
+            context["source_files"].append(str(boost_registry_path))
+        registry = compose_registry(registry, boost_registry, wechat_fallback, ai_fallback)
         boost_ids = [row["strategy_id"] for row in boost_registry["strategies"]]
         if wechat_fallback:
             strategy_executors.register(
@@ -576,7 +591,7 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
             )
         filters = decoder_filters(
             base_strategy_ids, boost_ids, original_decoders,
-            requested_decoders, wechat_fallback,
+            requested_decoders, wechat_fallback, ai_fallback,
         )
     strategy_ids = [row["strategy_id"] for row in registry.get("strategies", [])]
     if not strategy_ids or len(strategy_ids) != len(set(strategy_ids)):
@@ -671,7 +686,7 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
     })
     manifest["source_consistency"] = verify_source_snapshot(manifest["source_fingerprint"])
     fallback_summary = None
-    if boost_fallback:
+    if boost_fallback or ai_fallback:
         with attempts_path.open("r", encoding="utf-8") as source:
             recorded = (json.loads(row) for row in source if row.strip())
             fallback_summary = summarize(recorded, manifest)
@@ -737,6 +752,10 @@ def main():
                         help="append B01-B08 only after original strategies fail")
     parser.add_argument("--wechat-fallback", action="store_true",
                         help="append final W01 WeChatQRCode (requires boost and local models)")
+    parser.add_argument("--ai-fallback", action="store_true",
+                        help="experimental local YOLO detector + multi-decoder fallback")
+    parser.add_argument("--ai-model-config",
+                        help="existing local AI model/config JSON; no network fetch")
     parser.add_argument("--max-pixels", type=int, default=50000000)
     parser.add_argument("--left-name", default="WAVES_QR")
     parser.add_argument("--right-name", default="WAVES_QR_RAW")
@@ -751,6 +770,8 @@ def main():
             require_upgrade_gate=args.require_upgrade_gate,
             boost_fallback=args.boost_fallback,
             wechat_fallback=args.wechat_fallback,
+            ai_fallback=args.ai_fallback,
+            ai_model_config=args.ai_model_config,
         )
         print(json.dumps(result, ensure_ascii=False))
         return 0 if result["status"] in ("PASS_BASELINE_ONLY", "PASS_NON_REGRESSION") else 3
