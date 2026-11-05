@@ -296,3 +296,14 @@ python "$skill\scripts\run.py" contribution --manifest "<manifest.json>" --attem
 
 详细的运行、验收与限制见 `docs/recognition-regression-gate.md`。**没有传基线运行只能称普通扫描结果，不得称升版回归验收通过。**
 
+## v1.5.0：四槽合并验收与亮度专项实验
+
+**产品目标：增加真正正确解码的文件/配对，同时严格保留历史成功集合。** 本次审计已确认同输入 2560 张、1280 对，历史431张/409对均保留，但本地执行没有新增覆盖，也未真实接入 V04–V28，B01–B05 未执行。这些是**历史实测证据**，不能当作 v1.5 的新扫描成绩。
+
+1. **历史零回退必须在底层强制执行**：`scan_images.run_scan` 已内置 `baseline_evidence` / `require_upgrade_gate`。给使用低层入口的本地 Runner 设置 `QR_AUDIT_BASELINE_EVIDENCE=<历史evidence绝对目录>`、`QR_AUDIT_REQUIRE_BASELINE=1`，或传显式参数；缺基线运行前阻断，退化退出码3。没有基线的普通离线扫描只允许称 `PASS_BASELINE_ONLY`，不可叫升级验收通过。旧 inventory 中 `left_ids/right_ids` 可只读兼容。
+2. **旧原生接线审计**：`native_coverage_audit.py` 检查 V04/V10/V11/V12 是否有真正的 native 调用记录与来源标识。仅 R 策略有成功不代表 V 策略迁移完成。没有原始本地 `baseline_scanner.py` 时不得谎称旧V已经恢复。
+3. **亮度专项 opt-in**：原 B01–B05 不变，新增 B06（动态Gamma）、B07（Sauvola局部二值化）、B08（低频背景光照校正+Otsu），仅在指定 boost 注册表及适配器的实验模式中执行；不改变默认旧版扫描配置。
+4. **独立 WeChatQRCode opt-in**：`wechat_decoder_adapter.py` 为 `wechat` 解码器，需指定已经存在的本地模型及 `QR_AUDIT_WECHAT_MODEL_CONFIG`；OpenCV4使用4个Caffe文件，OpenCV5使用2个ONNX文件。绝不自动下载安装，不等价于微信App扫码。
+5. **同输入A/B**：先在已知载荷真值的小样本确认新增正确解码、错误载荷、失去的成功、配对覆盖、P95/CPU/RSS；通过后才允许原电脑2560张全量零回退验收。四槽代码合并或 CI 合成测试不能替代实物扫码验证。
+
+实施说明：`docs/recognition-regression-gate.md`、`docs/native-coverage-acceptance.md`、`docs/brightness-experiment.md`、`docs/wechat-decoder-experiment.md`。不增加数据库/MQ/服务部署层。

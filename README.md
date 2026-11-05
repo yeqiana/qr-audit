@@ -175,3 +175,11 @@ python scripts/regression_gate.py --baseline-evidence "D:\\old\\evidence" --cand
 ```
 
 Changed input hashes, lost old decoded files or pairs, conflicting old payload identities, or unverifiable evidence **block upgrade acceptance**, even if the new aggregate success count is larger. The tests use synthetic examples; the actual 2,560-image historical corpus must still be checked on its own machine. The v1.4.1 export installer includes the B-series adapter, experiment registry and regression validator. See [non-regression protocol](docs/recognition-regression-gate.md).
+
+## v1.5.0: Native evidence, core zero-regression gating, illumination experiments
+
+The non-regression gate now runs **inside `scan_images.run_scan`** (including custom low-level runners), not just within the higher CLI. The historical schema-2 pair aliases `left_ids/right_ids` are read without modifying old evidence. For strict upgrade jobs, set `QR_AUDIT_BASELINE_EVIDENCE` to the existing evidence folder and `QR_AUDIT_REQUIRE_BASELINE=1` in the runner environment. Any historical loss or unverifiable baseline blocks acceptance; without that configuration the default remains a baseline scan, **not an upgrade certificate**.
+
+The read-only `native_coverage_audit.py` tool checks evidence for native execution of V04/V10/V11/V12; it cannot restore source code that lives on another machine. Additional **opt-in** experiments B06 (exposure-aware Gamma), B07 (local Sauvola), B08 (background flattening plus Otsu) do not change V01–V28. The optional `wechat_decoder_adapter.py` supports local model files only, with 4 Caffe assets on OpenCV 4 and 2 ONNX assets on OpenCV 5. Never treat it as identical to the WeChat mobile app.
+
+See `docs/native-coverage-acceptance.md`, `docs/brightness-experiment.md`, and `docs/wechat-decoder-experiment.md`. Real-sample improvements and the historical 2,560-image gate remain **not verified** until tested on the owner's scanner machine.

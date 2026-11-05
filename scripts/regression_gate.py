@@ -110,9 +110,25 @@ def load_evidence(root):
             key = (group_key, _norm(pair["pair_key"]))
             if key in pairs:
                 raise ValueError("duplicate group-scoped pair key")
-            members = pair.get("left_file_ids", []) + pair.get("right_file_ids", [])
-            if len(members) != 2 or any(x not in image_ids for x in members):
-                raise ValueError("PAIRED must refer to exactly two declared images")
+            # Historical schema 2.0 exports used left_ids/right_ids; current
+            # inventory uses left_file_ids/right_file_ids. Never mutate either.
+            # Reject conflicting aliases rather than silently choosing one.
+            def member_ids(current, legacy):
+                if current in pair and legacy in pair and pair[current] != pair[legacy]:
+                    raise ValueError("conflicting historical/current pair member fields")
+                found = pair.get(current, pair.get(legacy))
+                if not isinstance(found, list):
+                    raise ValueError("PAIRED missing valid member list")
+                return found
+            left = member_ids("left_file_ids", "left_ids")
+            right = member_ids("right_file_ids", "right_ids")
+            members = left + right
+            if len(left) != 1 or len(right) != 1 or len(set(members)) != 2 or any(
+                x not in image_ids for x in members
+            ):
+                raise ValueError("PAIRED must refer to exactly two declared images (one per side)")
+            if image_ids[left[0]][1] == image_ids[right[0]][1]:
+                raise ValueError("PAIRED left and right members belong to the same side")
             pairs[key] = {image_ids[x] for x in members}
             pair_keys[key] = pair["pair_id"]
     decoded = defaultdict(set)
@@ -177,8 +193,10 @@ def compare(baseline, candidate):
     after_ok = {k for k in second if after.get(k)}
     lost = before_ok - after_ok
     gained = after_ok - before_ok
+    # Upgrading must preserve the complete observed payload identity set.
+    # Silently adding a conflicting second payload is *not* zero regression.
     payload_missing = {
-        k for k in before_ok & after_ok if not before[k].issubset(after[k])
+        k for k in before_ok & after_ok if before[k] != after[k]
     }
 
     def paired_success(snapshot):

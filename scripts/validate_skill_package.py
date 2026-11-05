@@ -19,6 +19,12 @@ REQUIRED = [
     "tests/test_recognition_boost.py", "docs/recognition-boost.md",
     "scripts/regression_gate.py", "tests/test_regression_gate.py",
     "docs/recognition-regression-gate.md",
+    "tests/test_run_scan_gate.py",
+    "scripts/native_coverage_audit.py", "tests/test_native_coverage_audit.py",
+    "docs/native-coverage-acceptance.md",
+    "tests/test_brightness_boost.py", "docs/brightness-experiment.md",
+    "scripts/wechat_decoder_adapter.py", "tests/test_wechat_decoder_adapter.py",
+    "docs/wechat-decoder-experiment.md",
 ]
 
 
