@@ -14,6 +14,7 @@ from pathlib import Path
 
 from evidence_contract import canonical_sha256, file_sha256
 from regression_gate import compare_directories
+from fallback_pipeline import compose_registry, decoder_filters, summarize
 from executor_registry import (
     StrategyExecutorRegistry, DecoderExecutorRegistry,
     register_builtin_strategies, register_builtin_decoders, load_adapter_modules,
@@ -68,6 +69,7 @@ def source_fingerprint(workspace_root, registry_path, adapter_modules, extra_sou
         Path(__file__).with_name("validate_evidence.py").resolve(),
         Path(__file__).with_name("analyze_contributions.py").resolve(),
         Path(__file__).with_name("regression_gate.py").resolve(),
+        Path(__file__).with_name("fallback_pipeline.py").resolve(),
         Path(__file__).with_name("build_report_models.py").resolve(),
         Path(__file__).with_name("render_reports.py").resolve(),
         Path(__file__).with_name("run.py").resolve(),
@@ -268,7 +270,7 @@ def attempt_record(run_id, image_meta, strategy_id, decoder, status, started,
 
 def execute_image_matrix(run_id, image_meta, strategy_order, strategy_executors,
                          decoder_executors, decoder_ids, mode, image_loader, context,
-                         max_pixels=50000000):
+                         max_pixels=50000000, decoder_strategy_filters=None):
     """One declared record per logical image×strategy×decoder combination.
 
     Source-file adapters can delegate to existing native scanners without
@@ -347,6 +349,9 @@ def execute_image_matrix(run_id, image_meta, strategy_order, strategy_executors,
             if stopped:
                 record["status"] = "SKIPPED_EARLY_STOP"
                 record["skip_reason"] = "EARLIER_STRATEGY_DECODED"
+            elif decoder_strategy_filters is not None and strategy_id not in decoder_strategy_filters.get(decoder_id, (strategy_id,)):
+                record["status"] = "SKIPPED_INELIGIBLE"
+                record["skip_reason"] = "DECODER_STRATEGY_FILTER"
             elif strategy is None:
                 record["status"] = "NOT_RUN"
                 record["skip_reason"] = transform_error
@@ -461,7 +466,8 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
              max_pixels=50000000, left_name="WAVES_QR", right_name="WAVES_QR_RAW",
              mode="scan", adapter_modules=None, workers=1, registry_path=None,
              required_strategies=None, baseline_evidence=None,
-             require_upgrade_gate=False):
+             require_upgrade_gate=False, boost_fallback=False,
+             wechat_fallback=False):
     input_root = Path(input_root).expanduser().resolve()
     report_root = Path(report_root).expanduser().resolve()
     workspace_root = Path(workspace_root).expanduser().resolve() if workspace_root else input_root.parent
@@ -482,6 +488,8 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
     )
     if require_upgrade_gate and not baseline_evidence:
         raise ValueError("BASELINE_EVIDENCE_REQUIRED: no verified historical run was supplied")
+    if wechat_fallback and not boost_fallback:
+        raise ValueError("WECHAT_FALLBACK_REQUIRES_BOOST_FALLBACK")
 
     # External source-file adapters need no image-decoding dependencies.
     try:
@@ -513,9 +521,31 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
         "source_files": [], "dependencies": [],
         "require_image_dependencies": True,
     }
-    loaded_adapters = load_adapter_modules(adapter_modules or [], strategy_executors, decoder_executors, context)
+    selected_adapters = list(adapter_modules or [])
+    if boost_fallback:
+        if cv2 is None or np is None:
+            raise ValueError("FALLBACK_REQUIRES_OPENCV_AND_NUMPY")
+        if "recognition_boost_adapter" not in selected_adapters:
+            selected_adapters.append("recognition_boost_adapter")
+    if wechat_fallback and "wechat_decoder_adapter" not in selected_adapters:
+        selected_adapters.append("wechat_decoder_adapter")
+    loaded_adapters = load_adapter_modules(
+        selected_adapters, strategy_executors, decoder_executors, context
+    )
 
-    requested_decoders = list(dict.fromkeys(decoders or ["opencv"]))
+    original_decoders = list(dict.fromkeys(decoders or ["opencv"]))
+    requested_decoders = list(original_decoders)
+    if boost_fallback:
+        for decoder_id in ("opencv", "zxingcpp"):
+            registered = decoder_executors.get(decoder_id)
+            if registered is not None and registered.available and decoder_id not in requested_decoders:
+                requested_decoders.append(decoder_id)
+    if wechat_fallback:
+        wechat = decoder_executors.get("wechat")
+        if wechat is None or not wechat.available:
+            raise ValueError("WECHAT_FALLBACK_UNAVAILABLE: configure existing local models")
+        if "wechat" not in requested_decoders:
+            requested_decoders.append("wechat")
     for decoder_id in requested_decoders:
         if decoder_executors.get(decoder_id) is None:
             decoder_executors.register(
@@ -528,6 +558,26 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
         Path(__file__).resolve().parents[1] / "assets" / "strategy-registry.initial.json"
     )
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    base_strategy_ids = [row["strategy_id"] for row in registry.get("strategies", [])]
+    filters = None
+    if boost_fallback:
+        boost_registry_path = Path(__file__).resolve().parents[1] / "assets" / "strategy-registry.boost.json"
+        if not boost_registry_path.is_file():
+            raise ValueError("FALLBACK_REGISTRY_NOT_FOUND")
+        boost_registry = json.loads(boost_registry_path.read_text(encoding="utf-8"))
+        context["source_files"].append(str(boost_registry_path))
+        registry = compose_registry(registry, boost_registry, wechat_fallback)
+        boost_ids = [row["strategy_id"] for row in boost_registry["strategies"]]
+        if wechat_fallback:
+            strategy_executors.register(
+                "W01", lambda image, ctx, params: image,
+                version="wechat-fallback-1",
+                parameters={"operation": "identity", "last_resort": True},
+            )
+        filters = decoder_filters(
+            base_strategy_ids, boost_ids, original_decoders,
+            requested_decoders, wechat_fallback,
+        )
     strategy_ids = [row["strategy_id"] for row in registry.get("strategies", [])]
     if not strategy_ids or len(strategy_ids) != len(set(strategy_ids)):
         raise ValueError("selected strategy registry must declare unique non-empty strategy IDs")
@@ -550,6 +600,11 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
     evidence.mkdir()
     inv_path = evidence / "inventory.json"
     inv_path.write_text(json.dumps(inventory, ensure_ascii=False, indent=2), encoding="utf-8")
+    # Frozen composed registry must be available to the reporting/validation
+    # path; the base registry file is never modified.
+    (evidence / "strategy-registry.effective.json").write_text(
+        json.dumps(registry, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     manifest = make_manifest(
         run_id, inventory, workspace_root, registry, registry_path,
         strategy_executors, decoder_executors, loaded_adapters, mode, requested_decoders, context,
@@ -577,6 +632,10 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
     manifest["connected_strategy_count"] = registered_count
     manifest["declared_strategy_count"] = len(strategy_ids)
     manifest["required_strategies"] = required_strategies
+    manifest["fallback_composition"] = registry.get("fallback_composition")
+    manifest["fallback_decoder_filters"] = (
+        {key: sorted(ids) for key, ids in filters.items()} if filters is not None else None
+    )
     manifest["recognition_regression_status"] = "NOT_RUN"
     manifest["upgrade_gate_required"] = bool(require_upgrade_gate)
     manifest_path = evidence / "run-manifest.json"
@@ -588,7 +647,7 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
             run_id, image_meta, manifest["strategy_order"],
             strategy_executors, decoder_executors, requested_decoders,
             mode, lambda item: load_image(item["path"], cv2, np),
-            context, max_pixels,
+            context, max_pixels, decoder_strategy_filters=filters,
         )
 
     total, decoded_images = 0, 0
@@ -611,6 +670,14 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
         k: v for k, v in inventory_after.items() if k != "generated_at"
     })
     manifest["source_consistency"] = verify_source_snapshot(manifest["source_fingerprint"])
+    fallback_summary = None
+    if boost_fallback:
+        with attempts_path.open("r", encoding="utf-8") as source:
+            recorded = (json.loads(row) for row in source if row.strip())
+            fallback_summary = summarize(recorded, manifest)
+        (evidence / "fallback-summary.json").write_text(
+            json.dumps(fallback_summary, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
     manifest["finished_at"] = utc_now()
     manifest["attempt_count"] = total
     manifest["run_status"] = "COMPLETE"
@@ -641,6 +708,7 @@ def run_scan(input_root, report_root, workspace_root=None, decoders=None,
         "image_count": len(manifest["images"]), "decoded_images": decoded_images,
         "attempts": total, "run_id": run_id, "workers": workers,
         "capability_status": capability_status, "regression": regression,
+        "fallback": fallback_summary,
         "input_consistency": manifest["input_consistency"],
         "source_consistency": manifest["source_consistency"],
     }
@@ -665,6 +733,10 @@ def main():
                         help="required historical evidence for upgrade acceptance")
     parser.add_argument("--require-upgrade-gate", action="store_true",
                         help="reject scan without historical evidence")
+    parser.add_argument("--boost-fallback", action="store_true",
+                        help="append B01-B08 only after original strategies fail")
+    parser.add_argument("--wechat-fallback", action="store_true",
+                        help="append final W01 WeChatQRCode (requires boost and local models)")
     parser.add_argument("--max-pixels", type=int, default=50000000)
     parser.add_argument("--left-name", default="WAVES_QR")
     parser.add_argument("--right-name", default="WAVES_QR_RAW")
@@ -677,6 +749,8 @@ def main():
             required_strategies=args.require_strategy,
             baseline_evidence=args.baseline_evidence,
             require_upgrade_gate=args.require_upgrade_gate,
+            boost_fallback=args.boost_fallback,
+            wechat_fallback=args.wechat_fallback,
         )
         print(json.dumps(result, ensure_ascii=False))
         return 0 if result["status"] in ("PASS_BASELINE_ONLY", "PASS_NON_REGRESSION") else 3

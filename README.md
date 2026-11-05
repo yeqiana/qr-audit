@@ -183,3 +183,9 @@ The non-regression gate now runs **inside `scan_images.run_scan`** (including cu
 The read-only `native_coverage_audit.py` tool checks evidence for native execution of V04/V10/V11/V12; it cannot restore source code that lives on another machine. Additional **opt-in** experiments B06 (exposure-aware Gamma), B07 (local Sauvola), B08 (background flattening plus Otsu) do not change V01–V28. The optional `wechat_decoder_adapter.py` supports local model files only, with 4 Caffe assets on OpenCV 4 and 2 ONNX assets on OpenCV 5. Never treat it as identical to the WeChat mobile app.
 
 See `docs/native-coverage-acceptance.md`, `docs/brightness-experiment.md`, and `docs/wechat-decoder-experiment.md`. Real-sample improvements and the historical 2,560-image gate remain **not verified** until tested on the owner's scanner machine.
+
+## v1.5.1: opt-in real fallback execution after the existing scanner
+
+Unlike the earlier standalone boost registry, the new `--boost-fallback` option **appends** B01–B08 after all current strategy IDs, only evaluating them on images where earlier strategies have not decoded a payload. The optional `--wechat-fallback` additionally appends W01 as a last-resort WeChatQRCode original-image decoder, using pre-existing local models only; it requires `--boost-fallback`.
+
+Original strategy definitions and ordering are left untouched. The effective combined registry is frozen to `evidence/strategy-registry.effective.json`, while incremental offline decode coverage is recorded in `evidence/fallback-summary.json`. Native source-file adapters are never fed experimental pixel transforms. **The fallback is not a replacement for missing V04/V10 implementations**, nor a claim that 2,560 real images have been rescanned. Run the historical zero-regression gate with real old evidence and verify payload truth independently. See [failure fallback guide](docs/failure-fallback-usage.md).

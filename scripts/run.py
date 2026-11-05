@@ -46,6 +46,10 @@ def main():
                              help="upgrade gate: preserve all previously decoded images, pairs and payloads")
         command.add_argument("--require-upgrade-gate", action="store_true",
                              help="fail before scan without a historical baseline")
+        command.add_argument("--boost-fallback", action="store_true",
+                             help="run B01-B08 only if existing strategies fail")
+        command.add_argument("--wechat-fallback", action="store_true",
+                             help="last-resort W01; requires boost and local WeChat models")
         command.add_argument("--source-root", help="all 模式只读检索源码候选位置")
 
     audit = sub.add_parser("audit", help="源码候选审计（关键词命中不是实现确认）")
@@ -132,16 +136,15 @@ def main():
             required_strategies=args.require_strategy,
             baseline_evidence=args.baseline_evidence,
             require_upgrade_gate=args.require_upgrade_gate,
+            boost_fallback=args.boost_fallback,
+            wechat_fallback=args.wechat_fallback,
         )
         evidence = Path(run_result["evidence"])
         manifest = _load_json(evidence / "run-manifest.json")
         attempts = load_jsonl(evidence / "attempts.jsonl")
         inventory = _load_json(evidence / "inventory.json")
         inventory_after = _load_json(evidence / "inventory-after.json")
-        registry = _load_json(
-            args.registry_path or
-            Path(__file__).resolve().parents[1] / "assets" / "strategy-registry.initial.json"
-        )
+        registry = _load_json(evidence / "strategy-registry.effective.json")
         check = validate(
             manifest, attempts, registry=registry, inventory=inventory,
             inventory_after=inventory_after,
@@ -201,6 +204,7 @@ def main():
             "workers": run_result["workers"],
             "capability_status": run_result["capability_status"],
             "regression": regression,
+            "fallback": run_result["fallback"],
             "validation": check, "contribution_output": contribution_output,
             "note": (
                 "常规扫描允许提前停止；只有 contribution 模式且全部策略执行器、输入、注册表和源码指纹均核验通过，"

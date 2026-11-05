@@ -307,3 +307,13 @@ python "$skill\scripts\run.py" contribution --manifest "<manifest.json>" --attem
 5. **同输入A/B**：先在已知载荷真值的小样本确认新增正确解码、错误载荷、失去的成功、配对覆盖、P95/CPU/RSS；通过后才允许原电脑2560张全量零回退验收。四槽代码合并或 CI 合成测试不能替代实物扫码验证。
 
 实施说明：`docs/recognition-regression-gate.md`、`docs/native-coverage-acceptance.md`、`docs/brightness-experiment.md`、`docs/wechat-decoder-experiment.md`。不增加数据库/MQ/服务部署层。
+
+
+## v1.5.1 · 三类离线识别增强已接入可选失败兜底
+
+**上线条件**：只有真实旧策略无解码结果时，才启动补静区/放大、Gamma/Sauvola/背景校正等 B01–B08，随后如有本地模型，可使用 W01 WeChatQRCode 原图兜底。仅通过显式 `--boost-fallback` / `--wechat-fallback` 启用；**默认识别流程不变**。V/R 原生/参考策略及其身份不可被 B/W 替代。
+
+- 用户原电脑的历史输入（2,560张、1,280对）仅有已知的 431张/409对基线；截至该版本未能在此连接机器验证新增覆盖。因此不得以 CI 合成结果宣称真实识别率已提升。
+- `run_scan` 的输出将追加 `evidence/strategy-registry.effective.json`（本次合成注册表，不修改原注册表）、`evidence/fallback-summary.json`（本次观察到的新增文件/配对及贡献策略，未认证载荷真值）。旧成功必须经 `--baseline-evidence` 同输入按图像及载荷集合做零回退验收。
+- 新增标准 OpenCV/ZXing 解码器只执行 B 策略；本地原生 source_file 解码器仅执行原注册表；WeChat 仅执行最后的 W01，必须预先具备本地模型与支持的 OpenCV，缺模型直接阻断，不静默跳过。初次建议 `workers=1`。
+- 带原有真实 adapter / registry 调用方式见 `docs/failure-fallback-usage.md`；不要单独用默认 V01–V03 参考扫描替换之前原生/本地 R scanner；旧 V04/V10 接线完整性仍要独立验收。

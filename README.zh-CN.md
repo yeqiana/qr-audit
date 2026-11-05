@@ -1,7 +1,7 @@
 # QR Audit — 离线二维码扫描与策略审计 Skill
 
 **Skill 名称：** `qr-audit`  
-**版本：** `1.5.0`
+**版本：** `1.5.1`
 **用途：** 二维码离线批量扫描、扫描器源码审计、策略贡献度实验，以及 Markdown + 静态离线 HTML 报告交付。
 
 ## 能做什么
@@ -106,7 +106,7 @@ python "$skill\scripts\run.py" scan --input-root "$input" --report-root "$report
 # 只读源码审计候选（不能以关键词命中代替人工核对）
 python "$skill\scripts\run.py" audit --source-root (Join-Path $project 'qr-tools') --output (Join-Path $reports 'audit-hints.json')
 
-# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.5.0
+# 将报告/统计辅助工具独立导出到项目下 qr-tools/qr-audit-v1.5.1
 python "$skill\scripts\install_tools.py" --workspace "$project"
 ```
 
@@ -178,3 +178,11 @@ python scripts/run.py scan --input-root "D:\\images" --report-root "D:\\reports"
 上例只说明门禁用法：**不能直接用默认V01–V03参考扫描器替换原版**。恢复旧 V04/V10/V11/V12 必须由原电脑实际接入并有原生执行记录和零回退证据。新 B01–B08 需要显式 `--registry-path assets/strategy-registry.boost.json --adapter-module recognition_boost_adapter`；WeChat需额外 `--adapter-module wechat_decoder_adapter --decoder wechat` 及预先准备的本地模型。独立实验结果不能混同手机微信实扫效果。
 
 参见 `docs/native-coverage-acceptance.md`、`docs/brightness-experiment.md`、`docs/wechat-decoder-experiment.md`。
+
+## v1.5.1 实际失败兜底模式（保留旧路径）
+
+之前 B01–B08 和 WeChatQRCode 需要单独实验，现在增加**可合成原有注册表的执行路径**：`--boost-fallback` 在原生/参考策略失败后依次执行 B01–B08；`--wechat-fallback` 在此基础上把 W01 微信离线模型放到最后（需预先在本地配置模型，不等于手机微信本身）。
+
+原注册表始终不修改，完整实际注册表保存 `evidence/strategy-registry.effective.json`；本轮新增观测成功汇总保存 `evidence/fallback-summary.json`，详细说明与本地命令见 [失败兜底正式接线说明](docs/failure-fallback-usage.md)。
+
+注意：**必须传入你真实使用的旧扫描器配置、适配器、解码器和历史基线**。如果使用默认参考 V01–V03，即使组合增强能扫出图片，也不能把它当成原原生扫描器的升级证据。当前仍未在你的真实 2560 张数据上重新测量正确成功率。

@@ -1,11 +1,11 @@
 {
   "name": "qr-audit",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "files": [
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "d6138493c428e81a3e4c22d59b14514626af47ccd5c547037c7543c69197a485",
-      "size_bytes": 1097
+      "sha256": "6069e315f1800d4395242e9d1208d995c1d26066accea648b0c51d1f687771e1",
+      "size_bytes": 1190
     },
     {
       "path": ".gitignore",
@@ -51,6 +51,11 @@
       "path": "docs/comparison.md",
       "sha256": "0a731897447e7ea97b2e84705a4cfd025ebf9407cd9209ed2685d4c0528dc2a3",
       "size_bytes": 2157
+    },
+    {
+      "path": "docs/failure-fallback-usage.md",
+      "sha256": "2773f36cdf8c41f9da9a5f84d6c7424d156308cb8aac9edac3cff1a6a94d0b45",
+      "size_bytes": 3291
     },
     {
       "path": "docs/faq.md",
@@ -129,13 +134,13 @@
     },
     {
       "path": "README.md",
-      "sha256": "cd978f1bc83fff331db25492d650f1d32422b83255701a379e8bdf21c6f7bb95",
-      "size_bytes": 16896
+      "sha256": "7548522f27cde1b829556b1b6a8331bfb24a9ee98dea867a2e15a50c4df3336b",
+      "size_bytes": 17981
     },
     {
       "path": "README.zh-CN.md",
-      "sha256": "85230d84f7f8ff07f09966e47e557b799004d17092bef24c30210491c507fd8c",
-      "size_bytes": 11427
+      "sha256": "9be2c7e95ec534248f462b6d268c6a5fdce8e3a6fa8bea81caae570678a569f2",
+      "size_bytes": 12402
     },
     {
       "path": "references/adapter-contract.md",
@@ -174,8 +179,8 @@
     },
     {
       "path": "RELEASE-NOTES.md",
-      "sha256": "665bc625bd3116e8f4a477dd2378b35661f91fe7fe3543fe29de1f6c3e57230a",
-      "size_bytes": 10024
+      "sha256": "659d5d3af25af8cda49613776bd05440c0ddc0843036ba842430c2a27402dbc5",
+      "size_bytes": 11094
     },
     {
       "path": "scripts/analyze_contributions.py",
@@ -208,9 +213,14 @@
       "size_bytes": 10181
     },
     {
+      "path": "scripts/fallback_pipeline.py",
+      "sha256": "e77ef0647e9ca61c82848bfc5d5cb218c53b6b81f739a6397068b596f8c73087",
+      "size_bytes": 4830
+    },
+    {
       "path": "scripts/install_tools.py",
-      "sha256": "644ec972c7eb6be63aa2bb2e5d21e244847038cfa2ec77341577913d24c6413d",
-      "size_bytes": 2367
+      "sha256": "e43f1013d7a44aece0f2db769615de73fc75f3d29c343d4b0a88b8bbea164922",
+      "size_bytes": 2390
     },
     {
       "path": "scripts/inventory_images.py",
@@ -239,13 +249,13 @@
     },
     {
       "path": "scripts/run.py",
-      "sha256": "d5b1da91cbfc933079923474c03c2a9d54c9b82a7531d22df63d49abf4ff905f",
-      "size_bytes": 11361
+      "sha256": "964bf3730c08a125441a4425e5cc4edb4c0a3d0b5b30b2298bed6ed664be9bbc",
+      "size_bytes": 11731
     },
     {
       "path": "scripts/scan_images.py",
-      "sha256": "5435640c9fc0fc7927c81ec4ae19cdebc4561f43c3eca711545391c3d3ec6fd8",
-      "size_bytes": 34079
+      "sha256": "0be4e0acde5c2f4c205ce8d3a1efb0b9b123c8176ba99d8855d17fe454c40ee9",
+      "size_bytes": 38247
     },
     {
       "path": "scripts/validate_evidence.py",
@@ -254,8 +264,8 @@
     },
     {
       "path": "scripts/validate_skill_package.py",
-      "sha256": "9ee038f40cbe9db4910e1daf63f9e002e07b6e716212183336fa3dc7a6b7a9b5",
-      "size_bytes": 3617
+      "sha256": "bcbc7a2f9b36f24aab40e2069cc050d5d747ef94a80a688c21448f499d794aaa",
+      "size_bytes": 3726
     },
     {
       "path": "scripts/wechat_decoder_adapter.py",
@@ -269,8 +279,8 @@
     },
     {
       "path": "SKILL.md",
-      "sha256": "48beeaab1dce61c17023269f78c632ee5519e00238dfa6340bcf51c1a1425962",
-      "size_bytes": 26982
+      "sha256": "4e80f56d2346587f6706b941693b7509322163063f6314b349d04e9c087c7396",
+      "size_bytes": 28458
     },
     {
       "path": "tests/test_brightness_boost.py",
@@ -291,6 +301,11 @@
       "path": "tests/test_external_cli_adapter.py",
       "sha256": "ae2de6a353a0d86e074f9df270c8911419ecccbd8890dae7625122e640c9eb04",
       "size_bytes": 5968
+    },
+    {
+      "path": "tests/test_fallback_pipeline.py",
+      "sha256": "ca3ded70db3b22e478772c8c4dd690823ace04a761479c20f5301153e0cb86b9",
+      "size_bytes": 7209
     },
     {
       "path": "tests/test_native_coverage_audit.py",
