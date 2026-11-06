@@ -319,7 +319,11 @@ def build(run_root):
     inventory = read_json(evidence / "inventory.json")
     manifest = read_json(evidence / "run-manifest.json")
     attempts = attempts_jsonl(evidence / "attempts.jsonl")
-    registry_path = Path(__file__).resolve().parents[1] / "assets" / "strategy-registry.initial.json"
+    effective_registry_path = evidence / "strategy-registry.effective.json"
+    registry_path = (
+        effective_registry_path if effective_registry_path.is_file()
+        else Path(__file__).resolve().parents[1] / "assets" / "strategy-registry.initial.json"
+    )
     registry = read_json(registry_path)
     inventory_after = read_json(evidence / "inventory-after.json")
     validation = validate(

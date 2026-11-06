@@ -330,3 +330,9 @@ python "$skill\scripts\run.py" contribution --manifest "<manifest.json>" --attem
 只在 `experiment/qr-ai-recovery-v2` 分支开启本地 `--ai-fallback --ai-model-config /path/ai.json`，在原V/R与已有B/W增强都失败时才运行 A01（本地 YOLO 专用二维码候选检测→多候选裁剪/角点透视修正→模块网格重建假设→OpenCV/ZXing/ZBar解码，另有可选 ONNX RGB超分）。不能把普通通用YOLO权重当作二维码检测器，更不能用AI生成载荷替代真正解码。
 
 本版权重文件不随GitHub仓库分发、不会自动下载、也不会上传图像；依赖缺失或本地权重加载失败时拒绝开始。具体启用、模型/许可证约束、历史零回退和配对分析见 `docs/ai-recovery-experiment.md`。**合成模型测试不能证明 2560 张真实图识别率提升**。
+
+## v2.0.0-ai.2：独立模块级恢复实验（仍非正式主线）
+
+仅在 `experiment/qr-module-recovery-v1` 分支，且本机已具备合法二维码 YOLO 检测权重与 OpenCV/ZXing-C++ 时，可在 `ai_model_config` 中显式加入 `"module_recovery":{"enabled":true,"max_version":10,"top_k":24,"max_decode":48}`。额外模块恢复只在 A01 原先解码失败后启用：在原始像素上搜索 QR 版本 v1–v10、网格间距/偏移与固定功能图案，重建候选矩阵后交给真正二维码解码器；不从模型或配对成员直接推测载荷。输入大于 8M 像素时跳过模块恢复而保留已有结果。检测器输入 `imgsz=640`、`batch=1` 应显式校验，建议 `--workers 1`。
+
+本机 176 张合成测试图的**完整多引擎对照**从 155/160 张、79/80 对提升到 158/160 张、80/80 对；零错误载荷、零无码误解码、零回退。这不代表历史 2560 张真图的识别率。模块联合融合只属于独立研究接口，不得算成某张图独立解码。参阅 `docs/module-recovery-experiment.md`。

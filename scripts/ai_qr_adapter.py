@@ -56,6 +56,8 @@ def read_config(path):
         "budget_seconds":_number(body,"budget_seconds",30,1,180),
         "grid_versions":_number(body,"grid_versions",7,1,15,True),
         "device":device,
+        "imgsz":_number(detector,"imgsz",640,320,1280,True),
+        "batch":_number(detector,"batch",1,1,1,True),
         "sr_model":None,
         "sr_scale":None,
         "zbar":body.get("zbar",True),
@@ -64,6 +66,15 @@ def read_config(path):
     for key in ("zbar","zxing"):
         if not isinstance(settings[key],bool):
             raise ValueError("AI_DECODER_OPTION_INVALID: "+key)
+    module=body.get("module_recovery",{})
+    if not isinstance(module,dict) or not isinstance(module.get("enabled",False),bool):
+        raise ValueError("AI_MODULE_RECOVERY_CONFIG_INVALID")
+    settings["module_recovery"]={
+        "enabled":module.get("enabled",False),
+        "max_version":_number(module,"max_version",10,1,10,True),
+        "top_k":_number(module,"top_k",24,1,64,True),
+        "max_decode":_number(module,"max_decode",48,1,128,True),
+    }
     sr=body.get("super_resolution")
     if sr is not None:
         if not isinstance(sr,dict) or sr.get("provider")!="onnxruntime":
@@ -77,7 +88,8 @@ def _infer_boxes(engine, image, cv2, np, settings):
     output=[]
     predictions=engine.predict(source=image,conf=settings["confidence"],
                                max_det=settings["max_candidates"],
-                               device=settings["device"],verbose=False)
+                               device=settings["device"],imgsz=settings["imgsz"],
+                               batch=settings["batch"],verbose=False)
     for result in predictions:
         boxes=getattr(result,"boxes",None)
         if boxes is None:
@@ -131,13 +143,16 @@ def register_qr_audit(strategies,decoders,context):
         raise RuntimeError("AI_REQUIRES_ONNXRUNTIME_INSTALLED")
     context.setdefault("source_files",[]).extend(
         [config["config_file"],config["detector_model"]]+
-        ([config["sr_model"]] if config["sr_model"] else [])
+        ([config["sr_model"]] if config["sr_model"] else [])+
+        ([str(Path(__file__).with_name("module_recovery.py"))]
+         if config["module_recovery"]["enabled"] else [])
     )
     context.setdefault("dependencies",[]).append({
         "name":"ai-qr-local-yolo","version":"experimental-v2",
         "config_file":config["config_file"],
         "model_provider":"ultralytics",
         "optional_sr":bool(config["sr_model"]),
+        "optional_module_recovery":config["module_recovery"]["enabled"],
     })
     worker_state=threading.local()
 
@@ -172,19 +187,43 @@ def register_qr_audit(strategies,decoders,context):
             zbar=None
         sr=(lambda patch:_super_resolve(current.sr,patch,cv2,np,config["sr_scale"])
             ) if config["sr_model"] else None
-        return recover(
+        result=recover(
             image,detections,cv2,np,zxing=zxing,zbar=zbar,
             super_resolve=sr,max_candidates=config["max_candidates"],
             max_attempts=config["max_attempts"],grid_versions=config["grid_versions"],
             budget_seconds=config["budget_seconds"],
         )
+        if config["module_recovery"]["enabled"] and not result["payloads"]:
+            opts=config["module_recovery"]
+            if image.shape[0]*image.shape[1]>8_000_000:
+                result["ai_engine_hits"]["module_skipped_pixel_budget"]=1
+                return result
+            from module_recovery import recover_image
+            # Only original pixels; QR text is accepted only from decoders.
+            grid=recover_image(
+                image,cv2,np,zxing=zxing,
+                max_version=opts["max_version"],top_k=opts["top_k"],
+                max_decode=opts["max_decode"],
+            )
+            result["module_candidate_count"]=grid["candidate_count"]
+            result["module_decode_calls"]=grid["attempts"]
+            result["ai_decode_calls"]+=grid["attempts"]
+            result["candidate_count"]+=grid["candidate_count"]
+            if grid["hits"]:
+                result["payloads"]=list(dict.fromkeys(
+                    item["payload"] for item in grid["hits"]
+                ))
+                result["ai_engine_hits"]["module_recovery"]=len(grid["hits"])
+        return result
 
     strategies.register("A01",lambda image,ctx,params:image,
                         version="ai-original-1",
                         parameters={"operation":"identity","ai_detector":"local-yolo"})
-    decoders.register("ai",decode,version="ai-local-multi-engine-v1",
+    decoders.register("ai",decode,version="ai-local-multi-engine-v2",
                       options={"model_provider":"ultralytics","sr_enabled":bool(config["sr_model"]),
                                "max_candidates":config["max_candidates"],
                                "max_attempts":config["max_attempts"],
                                "grid_versions":config["grid_versions"],
+                               "imgsz":config["imgsz"],"batch":config["batch"],
+                               "module_recovery":config["module_recovery"],
                                "source":"local-model-only"})
