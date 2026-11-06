@@ -1,11 +1,11 @@
 {
   "name": "qr-audit",
-  "version": "2.0.0-ai.2",
+  "version": "2.0.0-ai.3",
   "files": [
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "8a30fb7d24bc41f0e8e33a22feef27821ddbc242a71761756b8786c436aa1df5",
-      "size_bytes": 1435
+      "sha256": "35f0d3686dfe2288c49235a11d1dc703fb15dc7a7d5dc0ecd165443480966d97",
+      "size_bytes": 1535
     },
     {
       "path": ".gitignore",
@@ -19,8 +19,8 @@
     },
     {
       "path": "assets/ai-recovery.example.json",
-      "sha256": "85dd0ab9013ea2db0f061241876cb06570204e2715dfe1df63886058a1c1aec9",
-      "size_bytes": 449
+      "sha256": "65bfc686023cdaba1b355e5afe9bc5bd0985afc49f48536ea6913c9a93a7f2e0",
+      "size_bytes": 534
     },
     {
       "path": "assets/examples/report-model.example.json",
@@ -123,6 +123,11 @@
       "size_bytes": 4792
     },
     {
+      "path": "docs/rs-erasure-inverse-recovery-v3.md",
+      "sha256": "fc7f71aedeb03a89b7c3db74088638dac9125e27090f69750ff63b876bf235a1",
+      "size_bytes": 7080
+    },
+    {
       "path": "docs/scanning-optimization.md",
       "sha256": "ea1a7f5672cb50457f20210390c9b04029f50f7e564b97d72f24cd1b579d0276",
       "size_bytes": 4480
@@ -199,8 +204,8 @@
     },
     {
       "path": "RELEASE-NOTES.md",
-      "sha256": "6c82e98c8ee2c28ed6ec6146f8371e09775e365e47ab9531abb3f613fd9e696d",
-      "size_bytes": 14890
+      "sha256": "276a21b8afd18d96d731e1186458e84ed441ebc2cbf41431578129f71836b5d9",
+      "size_bytes": 16363
     },
     {
       "path": "scripts/ai_pair_consensus.py",
@@ -209,8 +214,8 @@
     },
     {
       "path": "scripts/ai_qr_adapter.py",
-      "sha256": "1b6b8ae2da7bdb16ed9d98f23844cd25359967465ae9f33de6d91bde05862bda",
-      "size_bytes": 10365
+      "sha256": "bde2db0f94d4ce33a0a4b983716c47c7e7f368de64addd7c0c4a89cebc8c8e5d",
+      "size_bytes": 12001
     },
     {
       "path": "scripts/ai_recovery_core.py",
@@ -264,13 +269,23 @@
     },
     {
       "path": "scripts/module_recovery.py",
-      "sha256": "f6b24fc641a3437d89e254be27fe52ce0b09c9f15c2d679e915fff0c0b2a697e",
-      "size_bytes": 12689
+      "sha256": "b5100e8bce635321d7f64783bca72ad8c5ab2f1713901f4bd429e5b4ceb74a79",
+      "size_bytes": 15569
     },
     {
       "path": "scripts/native_coverage_audit.py",
       "sha256": "d28858d2eb44e244b0495268f876b4313411a7a477cc24d2b01662fec73e87f0",
       "size_bytes": 4492
+    },
+    {
+      "path": "scripts/qr_erasure_recovery.py",
+      "sha256": "399e3a050ce3365ce85e711911b1a7b83cb5dc1f53b31cf7067f0b6edae0cbdd",
+      "size_bytes": 8507
+    },
+    {
+      "path": "scripts/qr_inverse_resample.py",
+      "sha256": "3d17583b074bd2ccd7d757c96cb9c6f18246911c841cc0a94ce55416b5baaf8f",
+      "size_bytes": 3814
     },
     {
       "path": "scripts/recognition_boost_adapter.py",
@@ -294,8 +309,8 @@
     },
     {
       "path": "scripts/scan_images.py",
-      "sha256": "2ab5c35cf166d74002babd8df395250ed85d77e783cbadb0590e730d9906bb0c",
-      "size_bytes": 39435
+      "sha256": "37a9e13d253b713d9728116b766c682a3e64638dd4a64095ca676448a2bc3e08",
+      "size_bytes": 39490
     },
     {
       "path": "scripts/validate_evidence.py",
@@ -304,8 +319,8 @@
     },
     {
       "path": "scripts/validate_skill_package.py",
-      "sha256": "7e422e6460511cff64a12f757d213acf71bcedc3fb7d4bf55834edf99630ef1e",
-      "size_bytes": 4202
+      "sha256": "d0fe8c849deeea3f9f076a264b3809c2bf375f7f61743e3c8aeae54241138771",
+      "size_bytes": 4357
     },
     {
       "path": "scripts/wechat_decoder_adapter.py",
@@ -319,8 +334,8 @@
     },
     {
       "path": "SKILL.md",
-      "sha256": "a3e0367351658b114718c1dd6eaa789bbdd4e384851f42bba866bec294faacab",
-      "size_bytes": 31542
+      "sha256": "52a0a4584e18e4fbddfee25c1035b2cd303c06bf19b12a3156abc98b2e2e9652",
+      "size_bytes": 32394
     },
     {
       "path": "tests/test_ai_pair_consensus.py",
@@ -386,6 +401,11 @@
       "path": "tests/test_report_effective_registry.py",
       "sha256": "05f7da3b0b2b23c3ed06633e85ebcd18b5a01c0673e3a5ceb70d74eb7ce1661b",
       "size_bytes": 2354
+    },
+    {
+      "path": "tests/test_rs_inverse_recovery.py",
+      "sha256": "a7d3eda8794f05cf0e9548a6a195448868b2e5fccf0780dd8d7a1ae7472116f2",
+      "size_bytes": 7225
     },
     {
       "path": "tests/test_run_scan_gate.py",

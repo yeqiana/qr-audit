@@ -395,7 +395,7 @@ def execute_image_matrix(run_id, image_meta, strategy_order, strategy_executors,
                         for field in (
                             "native_strategy_id", "native_decoder_id",
                             "native_scanner_version", "bridge_config_sha256",
-                            "ai_detector_candidates", "ai_decode_calls", "ai_engine_hits",
+                            "ai_detector_candidates", "ai_decode_calls", "ai_engine_hits", "module_recovery_method", "module_extra_decode_calls",
                         ):
                             if field in raw_result:
                                 record[field] = raw_result[field]

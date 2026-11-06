@@ -336,3 +336,9 @@ python "$skill\scripts\run.py" contribution --manifest "<manifest.json>" --attem
 仅在 `experiment/qr-module-recovery-v1` 分支，且本机已具备合法二维码 YOLO 检测权重与 OpenCV/ZXing-C++ 时，可在 `ai_model_config` 中显式加入 `"module_recovery":{"enabled":true,"max_version":10,"top_k":24,"max_decode":48}`。额外模块恢复只在 A01 原先解码失败后启用：在原始像素上搜索 QR 版本 v1–v10、网格间距/偏移与固定功能图案，重建候选矩阵后交给真正二维码解码器；不从模型或配对成员直接推测载荷。输入大于 8M 像素时跳过模块恢复而保留已有结果。检测器输入 `imgsz=640`、`batch=1` 应显式校验，建议 `--workers 1`。
 
 本机 176 张合成测试图的**完整多引擎对照**从 155/160 张、79/80 对提升到 158/160 张、80/80 对；零错误载荷、零无码误解码、零回退。这不代表历史 2560 张真图的识别率。模块联合融合只属于独立研究接口，不得算成某张图独立解码。参阅 `docs/module-recovery-experiment.md`。
+
+## v2.0.0-ai.3：可选二维码码字擦除与逆向采样恢复
+
+仅限第三阶段实验分支 `experiment/qr-module-recovery-v2`：在 `module_recovery.enabled=true` 后，可独立开启 `rs_erasures=true`（仅 QR v2-M 单 Reed–Solomon 码块，最多 16 擦除）和 `inverse_resample=true`（严格可逆的最近邻放大、v2 标准 QR、已有本机 SciPy）。`max_extra_decode` 限制附加扫码调用，默认 12，最大 24。仍只接受 ZXing-C++ / OpenCV 真正解码结果，严禁把另一张图的 payload 当作本图新成功。
+
+本地冻结的 176 张合成图集初步实测 160/160 正例、80/80 对，16 无码负例均无误报；**不可声称用户真实 2560 张二维码识别率为 100%**，正式合并前必须验证其历史 V/R 基线和现实扫描场景。详见 `docs/rs-erasure-inverse-recovery-v3.md`。

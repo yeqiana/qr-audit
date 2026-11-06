@@ -286,16 +286,79 @@ def fuse_candidates(left, right, cv2, np, max_pairs=576):
 
 
 def recover_image(image, cv2, np, zxing=None, max_version=10,
-                  top_k=32, max_decode=48):
+                  top_k=32, max_decode=48,
+                  enable_rs_erasures=False, enable_inverse_resample=False,
+                  max_extra_decode=12):
+    """Single-image QR recovery; strictly decoder-verified, with bounded extras.
+
+    No text is supplied or inferred from another image. The optional erasure
+    path repairs missing QR v2-M codewords with RS parity, then a real barcode
+    decoder must decode the reconstituted QR image. Inverse resampling is a
+    separate, strict opt-in for exact NN enlargements.
+    """
     candidates = sample_candidates(image, cv2, np, max_version, top_k)
     hits, attempts = decode_candidates(candidates, cv2, np, zxing, max_decode)
-    return {"hits": hits, "attempts": attempts, "candidate_count": len(candidates),
-            "top_candidates": [{
-                k: item[k] for k in (
-                    "version", "pitch", "rotation", "score",
-                    "pattern_accuracy", "coverage",
-                )
-            } for item in candidates[:8]], "candidates": candidates}
+    method = "grid" if hits else None
+    extra_calls=0
+    details={}
+    if not hits and enable_rs_erasures:
+        from qr_erasure_recovery import recover_erasure_grid, render_grid
+        for item in candidates:
+            if extra_calls >= max_extra_decode:
+                break
+            if item["version"] != 2:
+                continue
+            repaired = recover_erasure_grid(item, np)
+            if repaired is None:
+                continue
+            rendered = render_grid(repaired["grid"], cv2, np)
+            extra_calls += 1
+            payloads = _decode(rendered, cv2, zxing)
+            if payloads:
+                hits = [{ "payload": value, "version": 2,
+                          "method": "rs_erasure_v2m",
+                          "erased_codewords": repaired["erased_codewords"],
+                          "format_errors": repaired["format_errors"] }
+                        for value in payloads]
+                method = "rs_erasure_v2m"
+                details["rs_erasure_codewords"] = repaired["erased_codewords"]
+                break
+    if not hits and enable_inverse_resample and extra_calls < max_extra_decode:
+        # A solver hit is not a QR hit. Only accept real decoded payloads.
+        from qr_inverse_resample import invert_nearest_modules
+        from qr_erasure_recovery import render_grid
+        best = next((x for x in candidates
+                     if x["version"] == 2 and x["score"] >= .80), None)
+        if best is not None:
+            reconstructed = invert_nearest_modules(
+                image,cv2,np,best["expected"],best["score"],
+            )
+            if reconstructed is not None:
+                extra_calls += 1
+                rendered = render_grid(reconstructed["grid"], cv2, np)
+                payloads = _decode(rendered, cv2, zxing)
+                if payloads:
+                    hits = [{ "payload": value, "version": 2,
+                              "method": "inverse_nearest_v2",
+                              "source_resolution":reconstructed["source_resolution"] }
+                            for value in payloads]
+                    method = "inverse_nearest_v2"
+                    details["inverse_source_resolution"] = reconstructed["source_resolution"]
+    attempts += extra_calls
+    return {
+        "hits": hits, "attempts": attempts,
+        "extra_decode_calls": extra_calls,
+        "recovery_method":method,
+        **details,
+        "candidate_count": len(candidates),
+        "top_candidates": [{
+            k: item[k] for k in (
+                "version", "pitch", "rotation", "score",
+                "pattern_accuracy", "coverage",
+            )
+        } for item in candidates[:8]],
+        "candidates": candidates,
+    }
 
 
 def recover_pair(left_image, right_image, cv2, np, zxing=None,
