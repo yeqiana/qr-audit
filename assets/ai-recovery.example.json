@@ -5,11 +5,19 @@
     "weights": "models/qr-specialized-detector.pt",
     "confidence": 0.2,
     "max_candidates": 8,
-    "device": "cpu"
+    "device": "cpu",
+    "imgsz": 640,
+    "batch": 1
   },
   "max_attempts": 180,
   "budget_seconds": 30,
   "grid_versions": 7,
+  "module_recovery": {
+    "enabled": false,
+    "max_version": 10,
+    "top_k": 24,
+    "max_decode": 48
+  },
   "zbar": true,
   "zxing": true
 }

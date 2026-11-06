@@ -172,10 +172,10 @@ class AiImageTests(unittest.TestCase):
             self.assertEqual(result["status"],"PASS_BASELINE_ONLY")
             self.assertEqual(result["fallback"]["newly_rescued_images"],1)
             evidence=Path(result["evidence"])
-            manifest=json.loads((evidence/"run-manifest.json").read_text())
+            manifest=json.loads((evidence/"run-manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["fallback_composition"]["ai_strategy_id"],"A01")
             attempt=[json.loads(row) for row in
-                     (evidence/"attempts.jsonl").read_text().splitlines()
+                     (evidence/"attempts.jsonl").read_text(encoding="utf-8").splitlines()
                      if row.strip()]
             decoded=[row for row in attempt if
                      row["strategy_id"]=="A01" and row["status"]=="DECODED"]

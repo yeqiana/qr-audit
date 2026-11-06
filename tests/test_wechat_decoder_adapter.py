@@ -44,7 +44,8 @@ class WeChatDecoderTests(unittest.TestCase):
             result = ds.get("wechat").decode(None, {}, {})
             self.assertEqual(result["payloads"], ["test-payload"])
             self.assertEqual(len(calls[0]), 2)
-            self.assertIn(str(path), ctx["source_files"])
+            self.assertIn(os.path.normcase(str(path)),
+                          [os.path.normcase(p) for p in ctx["source_files"]])
             self.assertEqual(len(ctx["source_files"]), 3)
 
         with tempfile.TemporaryDirectory() as folder:

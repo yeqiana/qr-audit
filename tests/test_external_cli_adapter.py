@@ -82,7 +82,8 @@ class ExternalCliBridgeTests(unittest.TestCase):
             config, image = self.make_fixture(temp)
             strategies, decoders, context = self.register(config)
             self.assertEqual(strategies.get("V04").input_mode, "source_file")
-            self.assertIn(str(config), context["source_files"])
+            self.assertIn(os.path.normcase(str(config)),
+                          [os.path.normcase(p) for p in context["source_files"]])
             decode_context = dict(context, image_meta=image, run_id="runA", strategy_id="V04", decoder_id="native")
             result = decoders.get("native").decode(str(image["path"]), decode_context, {})
             self.assertEqual(result["status"], "DECODED")

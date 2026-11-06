@@ -33,6 +33,8 @@ REQUIRED = [
     "scripts/ai_pair_consensus.py", "assets/ai-recovery.example.json",
     "tests/test_ai_qr_recovery.py", "tests/test_ai_pair_consensus.py",
     "docs/ai-recovery-experiment.md",
+    "scripts/module_recovery.py", "tests/test_module_recovery.py",
+    "docs/module-recovery-experiment.md", "tests/test_report_effective_registry.py",
 ]
 
 
@@ -51,7 +53,7 @@ def check():
     if any("qr-offline-scan-audit" in path.read_text(encoding="utf-8") for path in ROOT.rglob("*.md")):
         errors.append("残留旧 Skill 名称")
     manifest = json.loads((ROOT / "PACKAGE-MANIFEST.json").read_text(encoding="utf-8"))
-    if manifest.get("version") != "2.0.0-ai.1":
+    if manifest.get("version") != "2.0.0-ai.2":
         errors.append("发布清单版本与当前 Skill 版本不匹配")
     listed = set()
     for entry in manifest.get("files", []):
