@@ -69,11 +69,17 @@ def read_config(path):
     module=body.get("module_recovery",{})
     if not isinstance(module,dict) or not isinstance(module.get("enabled",False),bool):
         raise ValueError("AI_MODULE_RECOVERY_CONFIG_INVALID")
+    for key in ("rs_erasures","inverse_resample"):
+        if not isinstance(module.get(key,False),bool):
+            raise ValueError("AI_MODULE_RECOVERY_OPTION_INVALID: "+key)
     settings["module_recovery"]={
         "enabled":module.get("enabled",False),
         "max_version":_number(module,"max_version",10,1,10,True),
         "top_k":_number(module,"top_k",24,1,64,True),
         "max_decode":_number(module,"max_decode",48,1,128,True),
+        "rs_erasures":module.get("rs_erasures",False),
+        "inverse_resample":module.get("inverse_resample",False),
+        "max_extra_decode":_number(module,"max_extra_decode",12,1,24,True),
     }
     sr=body.get("super_resolution")
     if sr is not None:
@@ -141,11 +147,21 @@ def register_qr_audit(strategies,decoders,context):
         raise RuntimeError("AI_REQUIRES_ULTRALYTICS_INSTALLED")
     if config["sr_model"] and importlib.util.find_spec("onnxruntime") is None:
         raise RuntimeError("AI_REQUIRES_ONNXRUNTIME_INSTALLED")
+    if config["module_recovery"]["enabled"] and config["module_recovery"]["inverse_resample"]:
+        if importlib.util.find_spec("scipy") is None:
+            raise RuntimeError("AI_INVERSE_REQUIRES_SCIPY_INSTALLED")
     context.setdefault("source_files",[]).extend(
         [config["config_file"],config["detector_model"]]+
         ([config["sr_model"]] if config["sr_model"] else [])+
         ([str(Path(__file__).with_name("module_recovery.py"))]
-         if config["module_recovery"]["enabled"] else [])
+         if config["module_recovery"]["enabled"] else [])+
+        ([str(Path(__file__).with_name("qr_erasure_recovery.py"))]
+         if config["module_recovery"]["enabled"]
+         and (config["module_recovery"]["rs_erasures"]
+              or config["module_recovery"]["inverse_resample"]) else [])+
+        ([str(Path(__file__).with_name("qr_inverse_resample.py"))]
+         if config["module_recovery"]["enabled"]
+         and config["module_recovery"]["inverse_resample"] else [])
     )
     context.setdefault("dependencies",[]).append({
         "name":"ai-qr-local-yolo","version":"experimental-v2",
@@ -153,6 +169,8 @@ def register_qr_audit(strategies,decoders,context):
         "model_provider":"ultralytics",
         "optional_sr":bool(config["sr_model"]),
         "optional_module_recovery":config["module_recovery"]["enabled"],
+        "optional_rs_erasures":config["module_recovery"]["rs_erasures"],
+        "optional_inverse_resample":config["module_recovery"]["inverse_resample"],
     })
     worker_state=threading.local()
 
@@ -204,7 +222,12 @@ def register_qr_audit(strategies,decoders,context):
                 image,cv2,np,zxing=zxing,
                 max_version=opts["max_version"],top_k=opts["top_k"],
                 max_decode=opts["max_decode"],
+                enable_rs_erasures=opts["rs_erasures"],
+                enable_inverse_resample=opts["inverse_resample"],
+                max_extra_decode=opts["max_extra_decode"],
             )
+            result["module_recovery_method"]=grid["recovery_method"]
+            result["module_extra_decode_calls"]=grid["extra_decode_calls"]
             result["module_candidate_count"]=grid["candidate_count"]
             result["module_decode_calls"]=grid["attempts"]
             result["ai_decode_calls"]+=grid["attempts"]
@@ -214,12 +237,14 @@ def register_qr_audit(strategies,decoders,context):
                     item["payload"] for item in grid["hits"]
                 ))
                 result["ai_engine_hits"]["module_recovery"]=len(grid["hits"])
+                if grid["recovery_method"]:
+                    result["ai_engine_hits"][grid["recovery_method"]]=len(grid["hits"])
         return result
 
     strategies.register("A01",lambda image,ctx,params:image,
                         version="ai-original-1",
                         parameters={"operation":"identity","ai_detector":"local-yolo"})
-    decoders.register("ai",decode,version="ai-local-multi-engine-v2",
+    decoders.register("ai",decode,version="ai-local-multi-engine-v3",
                       options={"model_provider":"ultralytics","sr_enabled":bool(config["sr_model"]),
                                "max_candidates":config["max_candidates"],
                                "max_attempts":config["max_attempts"],

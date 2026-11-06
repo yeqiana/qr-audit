@@ -35,6 +35,8 @@ REQUIRED = [
     "docs/ai-recovery-experiment.md",
     "scripts/module_recovery.py", "tests/test_module_recovery.py",
     "docs/module-recovery-experiment.md", "tests/test_report_effective_registry.py",
+    "scripts/qr_erasure_recovery.py", "scripts/qr_inverse_resample.py",
+    "tests/test_rs_inverse_recovery.py", "docs/rs-erasure-inverse-recovery-v3.md",
 ]
 
 
@@ -53,7 +55,7 @@ def check():
     if any("qr-offline-scan-audit" in path.read_text(encoding="utf-8") for path in ROOT.rglob("*.md")):
         errors.append("残留旧 Skill 名称")
     manifest = json.loads((ROOT / "PACKAGE-MANIFEST.json").read_text(encoding="utf-8"))
-    if manifest.get("version") != "2.0.0-ai.2":
+    if manifest.get("version") != "2.0.0-ai.3":
         errors.append("发布清单版本与当前 Skill 版本不匹配")
     listed = set()
     for entry in manifest.get("files", []):

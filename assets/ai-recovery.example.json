@@ -16,7 +16,10 @@
     "enabled": false,
     "max_version": 10,
     "top_k": 24,
-    "max_decode": 48
+    "max_decode": 48,
+    "rs_erasures": false,
+    "inverse_resample": false,
+    "max_extra_decode": 12
   },
   "zbar": true,
   "zxing": true
